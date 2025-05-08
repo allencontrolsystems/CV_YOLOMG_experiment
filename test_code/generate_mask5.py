@@ -1,6 +1,8 @@
+import os
 import cv2
 import numpy as np
 from FD5_mask import FD5_mask
+import time
 
 
 sets_NPS = ['Clip_01', 'Clip_02', 'Clip_03', 'Clip_04', 'Clip_05', 'Clip_06', 'Clip_07', 'Clip_08', 'Clip_09', 'Clip_10',
@@ -32,10 +34,18 @@ set0 = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom08', 'phanto
         'phantom57', 'phantom58', 'phantom60', 'phantom61', 'phantom64', 'phantom73', 'phantom79',
         'phantom92', 'phantom93', 'phantom94', 'phantom95', 'phantom97', 'phantom102', 'phantom110',
         'phantom113', 'phantom119', 'phantom133', 'phantom135', 'phantom136', 'phantom141', 'phantom144']
+t1 = None
+t2 = None
+videos_len = len(sets)
+for video_count, video_sets in enumerate(sets):
+    if t1 is None:
+        took = "N/A"
+    else:
+        took = t2 - t1
 
-for video_sets in set0:
+    t1 = time.time()
     video_name = video_sets
-    cap = cv2.VideoCapture('/home/user-guo/data/ARD-MAV/test_videos/' + video_name + '.mp4')
+    cap = cv2.VideoCapture('/home/acs/YOLOMG/full_data/ARD100_dataset/train_video/' + video_name + '.mp4')
     lastFrame1 = None
     lastFrame2 = None
     lastFrame3 = None
@@ -49,6 +59,12 @@ for video_sets in set0:
 
         currentFrame = frame
         count = count + 1
+
+        save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/rgb/' + video_name
+
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        cv2.imwrite(save_path + '/' + video_name + '_' + str(count).zfill(4) + '.jpg', currentFrame)
 
         if lastFrame4 is None:
             if lastFrame3 is None:
@@ -70,13 +86,14 @@ for video_sets in set0:
         obj_num = FD5_mask(lastFrame1, lastFrame3, currentFrame, video_name, count-2)
 
         print('video name: ', video_name, end=' ')
-        print('frame count: %d obj_num: %d' % (count-2, obj_num))
-
+        print('frame count: %d obj_num: %d' % (count-2, obj_num), f"{videos_len - video_count - 1} more videos to go and last video took {took} s")
         lastFrame1 = lastFrame2
         lastFrame2 = lastFrame3
         lastFrame3 = lastFrame4
         lastFrame4 = currentFrame
 
+
     cap.release()
+    t2 = time.time()
 
 

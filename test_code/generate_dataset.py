@@ -59,15 +59,15 @@ set_rs = ['phantom02', 'phantom56', 'phantom57', 'phantom58', 'phantom60', 'phan
 set_gs = ['phantom03', 'phantom05', 'phantom47', 'phantom93']  # 400~1024
 
 
-for video_sets in set2:
+for video_sets in set1:
     id = video_sets
-    imgdir = "/home/user-guo/data/drone-dataset/phantom-dataset/images/" + id + "/"
-    annodir = '/home/user-guo/data/drone-dataset/phantom-dataset/Annotations/' + id + '/'
-    maskdir = '/home/user-guo/data/drone-dataset/phantom-dataset/mask22/' + id + '/'
+    imgdir = "/home/acs/YOLOMG/full_data/phantom-dataset/images/" + id + "/"
+    annodir = '/home/acs/YOLOMG/full_data/phantom-dataset/Annotations/' + id + '/'
+    maskdir = '/home/acs/YOLOMG/full_data/phantom-dataset/mask22/' + id + '/'
 
-    imgdest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/images/'
-    annodest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/Annotations/'
-    maskdest = '/home/user-guo/Documents/YOLOMG/datasets/ARD100_mask22/mask22/'
+    imgdest = '/home/acs/YOLOMG/full_data/ARD100_mask22/images/'
+    annodest = '/home/acs/YOLOMG/full_dataARD100_mask22/Annotations/'
+    maskdest = '/home/acs/YOLOMG/full_data/ARD100_mask22/mask22/'
 
     if not os.path.exists(imgdest):
         os.makedirs(imgdest)

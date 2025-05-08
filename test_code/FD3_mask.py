@@ -68,7 +68,13 @@ def FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count):
     # close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
     # cv2.imshow('Morphological Operation', close_demo)
 
-    save_path = '/home/user-guo/data/drone-dataset/phantom-dataset/mask31/' + video_name
+    # save_path = '/home/user-guo/data/drone-dataset/phantom-dataset/mask31/' + video_name
+
+    # if not os.path.exists(save_path):
+    #     os.makedirs(save_path)
+    # cv2.imwrite(save_path + '/' + video_name + '_' + str(frame_count).zfill(4) + '.jpg', frameDiff)
+
+    save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + video_name
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
