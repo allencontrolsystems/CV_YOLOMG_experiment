@@ -147,8 +147,8 @@ class Concat3fixed(nn.Module):
         x2=weight*x2
         x1=x1*(2-weight)
         x = torch.cat((x1,x2), self.d)
-        x=self.channel_attention(x)
-        return x
+        X=self.channel_attention(x)
+        return x * X
     
 class CBAM(nn.Module):
     # CSP Bottleneck with 3 convolutions

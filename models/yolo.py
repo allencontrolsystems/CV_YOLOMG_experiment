@@ -164,6 +164,7 @@ class Model(nn.Module):
 
                 if profile:
                     self._profile_one_layer(m, x2, dt)
+
                 if m.type == 'models.common.Concat3'or m.type == 'models.common.Concat3fixed':
                     x2 = m(x2,x1)  # run
                 else:
