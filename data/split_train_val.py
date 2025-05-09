@@ -12,8 +12,10 @@ opt = parser.parse_args()
 
 trainval_percent = 1.0
 train_percent = 0.85
-xmlfilepath = opt.xml_path
-txtsavepath = opt.txt_path
+# xmlfilepath = opt.xml_path
+xmlfilepath = "/home/acs/YOLOMG/full_data/ARD100_mask31/annotations"
+# txtsavepath = opt.txt_path
+txtsavepath = "/home/acs/YOLOMG/full_data/ARD100_mask31/ImageSets/Main"
 
 total_xml = os.listdir(xmlfilepath)
 if not os.path.exists(txtsavepath):
@@ -32,6 +34,7 @@ file_train = open(txtsavepath + '/train.txt', 'w')
 file_val = open(txtsavepath + '/val.txt', 'w')
 
 for i in list_index:
+    print(num - i, " xmls left to process")
     name = total_xml[i][:-4] + '\n'
     if i in trainval:
         file_trainval.write(name)

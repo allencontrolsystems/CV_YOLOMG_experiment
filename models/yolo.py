@@ -153,7 +153,7 @@ class Model(nn.Module):
                 y.append(x1 if m.i in self.save else None)  # save output
             else:
                 if m.f != -1:  # if not from previous layer
-                    if m.type == 'models.common.Concat3':
+                    if m.type == 'models.common.Concat3'or m.type == 'models.common.Concat3fixed':
                         for j in m.f:
                             if j==-1:
                                 x2 = x2
@@ -164,7 +164,7 @@ class Model(nn.Module):
 
                 if profile:
                     self._profile_one_layer(m, x2, dt)
-                if m.type == 'models.common.Concat3':
+                if m.type == 'models.common.Concat3'or m.type == 'models.common.Concat3fixed':
                     x2 = m(x2,x1)  # run
                 else:
                     x2 = m(x2)  # run
@@ -299,7 +299,7 @@ def parse_model(d, ch,ch2):  # model_dict, input_channels(3)
         
         if i < backbone1depth:
             if m in [Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, MixConv2d, Focus, CrossConv,
-                 BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, conv_bn_relu_maxpool, Shuffle_Block, CARAFE, Concat3]:
+                 BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, conv_bn_relu_maxpool, Shuffle_Block, CARAFE, Concat3, Concat3fixed]:
                 c1, c2 = ch[f], args[0]
                 if c2 != no:  
                     c2 = make_divisible(c2 * gw, 8)  # 保证通道是8的倍数
@@ -327,7 +327,7 @@ def parse_model(d, ch,ch2):  # model_dict, input_channels(3)
                     else:
                         c2p = ch[x]
                     c22 = c22+c2p
-            elif m is Concat3:  # Concat：f是所有需要拼接层的索引，则输出通道c2是所有层的和
+            elif m is Concat3 or m is Concat3fixed:  # Concat：f是所有需要拼接层的索引，则输出通道c2是所有层的和
                 c22 = 0
                 for x in f:
                     if x == -1:

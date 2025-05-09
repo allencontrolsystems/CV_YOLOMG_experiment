@@ -42,6 +42,7 @@ sets_NPS_test = ['Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46
 
 t1 = None
 t2 = None
+sets.extend(set0)
 videos_len = len(sets)
 for video_count, video_sets in enumerate(sets):
     if t1 is None:
@@ -88,5 +89,6 @@ for video_count, video_sets in enumerate(sets):
         lastFrame2 = currentFrame
 
     cap.release()
+    t2 = time.time()
 
 

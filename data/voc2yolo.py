@@ -3,7 +3,7 @@ import os
 from os import getcwd
 
 sets = ['train', 'val', 'test']
-classes = ["UAV"]
+classes = ["Drone"]
 abs_path = os.getcwd()
 print(abs_path)
 
@@ -23,8 +23,8 @@ def convert(size, box):
 
 
 def convert_annotation(image_id):
-    in_file = open('/home/xxx/Documents/YOLOMG/dataset/NPS3/annotations/%s.xml' % (image_id), encoding='UTF-8')
-    out_file = open('/home/xxx/Documents/YOLOMG/dataset/NPS3/labels/%s.txt' % (image_id), 'w')
+    in_file = open('/home/acs/YOLOMG/full_data/ARD100_mask31/annotations/%s.xml' % (image_id), encoding='UTF-8')
+    out_file = open('/home/acs/YOLOMG/full_data/ARD100_yolo/labels/%s.txt' % (image_id), 'w')
     tree = ET.parse(in_file)
     root = tree.getroot()
     size = root.find('size')
@@ -57,9 +57,9 @@ def convert_annotation(image_id):
 
 wd = getcwd()
 for image_set in sets:
-    if not os.path.exists('/home/xxx/Documents/YOLOMG/dataset/NPS3/labels/'):
-        os.makedirs('/home/xxx/Documents/YOLOMG/dataset/NPS3/labels/')
-    image_ids = open('/home/xxx/Documents/YOLOMG/dataset/NPS3/ImageSets/Main/%s.txt' % image_set).read().strip().split()
+    if not os.path.exists('/home/acs/YOLOMG/full_data/ARD100_yolo/labels/'):
+        os.makedirs('/home/acs/YOLOMG/full_data/ARD100_yolo/labels/')
+    image_ids = open('/home/acs/YOLOMG/full_data/ARD100_mask31/ImageSets/Main/%s.txt' % image_set).read().strip().split()
     # list_file = open('/home/xxx/Documents/YOLOMG/dataset/NPS3/%s.txt' % image_set, 'w')
     for image_id in image_ids:
         # list_file.write('/home/xxx/Documents/YOLOMG/dataset/NPS3/images/%s.jpg\n' % image_id)

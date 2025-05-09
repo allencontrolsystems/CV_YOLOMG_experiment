@@ -58,16 +58,16 @@ set_es = ['phantom04', 'phantom22', 'phantom39', 'phantom41', 'phantom45', 'phan
 set_rs = ['phantom02', 'phantom56', 'phantom57', 'phantom58', 'phantom60', 'phantom79', 'phantom92', 'phantom102', 'phantom110', 'phantom113', 'phantom119', 'phantom141', 'phantom144']  # 144~400
 set_gs = ['phantom03', 'phantom05', 'phantom47', 'phantom93']  # 400~1024
 
-
-for video_sets in set1:
+video_lens = len(set1)
+for video_count, video_sets in enumerate(set1):
     id = video_sets
     imgdir = "/home/acs/YOLOMG/full_data/phantom-dataset/images/" + id + "/"
-    annodir = '/home/acs/YOLOMG/full_data/phantom-dataset/Annotations/' + id + '/'
-    maskdir = '/home/acs/YOLOMG/full_data/phantom-dataset/mask22/' + id + '/'
+    annodir = '/home/acs/YOLOMG/full_data/phantom-dataset/annotations/' + id + '/'
+    maskdir = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + id + '/'
 
-    imgdest = '/home/acs/YOLOMG/full_data/ARD100_mask22/images/'
-    annodest = '/home/acs/YOLOMG/full_dataARD100_mask22/Annotations/'
-    maskdest = '/home/acs/YOLOMG/full_data/ARD100_mask22/mask22/'
+    imgdest = '/home/acs/YOLOMG/full_data/ARD100_mask31/images/'
+    annodest = '/home/acs/YOLOMG/full_data/ARD100_mask31/annotations/'
+    maskdest = '/home/acs/YOLOMG/full_data/ARD100_mask31/mask31/'
 
     if not os.path.exists(imgdest):
         os.makedirs(imgdest)
@@ -125,13 +125,12 @@ for video_sets in set1:
             shutil.copy(img_path, imgdest)
             shutil.copy(mask_path, maskdest)
             shutil.copy(xml_path, annodest)
-            print(xmlname)
         else:
-            print(xmlname, end=' ')
+            # print(xmlname, end=' ')
             small_num = small_num + 1
-            print('too small object: ', area)
+            # print('too small object: ', area)
 
-print('small object num: ', small_num)
+    print('small object num: ', small_num, " remaining videos: ", video_lens - video_count)
 
 # for i in range(end_index):
 #     # for image in image_list:

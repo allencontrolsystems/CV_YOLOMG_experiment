@@ -19,6 +19,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import SGD, Adam, AdamW, lr_scheduler
 from tqdm import tqdm
 
+import warnings
+warnings.filterwarnings('ignore')
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
@@ -114,7 +117,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
     if pretrained: 
         with torch_distributed_zero_first(LOCAL_RANK):
             weights = attempt_download(weights)  # download if not found locally
-        ckpt = torch.load(weights, map_location='cpu')  # load checkpoint to CPU to avoid CUDA memory leak
+        ckpt = torch.load(weights, map_location='cpu', weights_only=False)  # load checkpoint to CPU to avoid CUDA memory leak
         model = Model(cfg or ckpt['model'].yaml, ch=3, ch2=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (cfg or hyp.get('anchors')) and not resume else []  # exclude keys
         csd = ckpt['model'].float().state_dict()  # checkpoint state_dict as FP32
@@ -205,7 +208,6 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
     if opt.sync_bn and cuda and RANK != -1:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
         LOGGER.info('Using SyncBatchNorm()')
-
     train_loader, dataset = create_dataloader(train_path,train_path2, imgsz, batch_size // WORLD_SIZE, gs, single_cls,
                                               hyp=hyp, augment=True, cache=None if opt.cache == 'val' else opt.cache,
                                               rect=opt.rect, rank=LOCAL_RANK, workers=workers,
@@ -476,7 +478,7 @@ def parse_opt(known=False):
     parser.add_argument('--label-smoothing', type=float, default=0.0, help='Label smoothing epsilon')
     parser.add_argument('--patience', type=int, default=100, help='EarlyStopping patience (epochs without improvement)')
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone=10, first3=0 1 2')
-    parser.add_argument('--save-period', type=int, default=-1, help='Save checkpoint every x epochs (disabled if < 1)')
+    parser.add_argument('--save-period', type=int, default=1, help='Save checkpoint every x epochs (disabled if < 1)')
     parser.add_argument('--local_rank', type=int, default=-1, help='DDP parameter, do not modify')
 
     # Weights & Biases arguments

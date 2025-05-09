@@ -132,7 +132,24 @@ class Concat3(nn.Module):
         x = torch.cat((x1,x2), self.d)
         X=self.channel_attention(x)
         return x
- 
+    
+class Concat3fixed(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention(7)
+        self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2):
+        weight1 = self.spatial_attention(x1)
+        weight2 = self.spatial_attention(x2)
+        weight = (weight1/weight2)
+        x2=weight*x2
+        x1=x1*(2-weight)
+        x = torch.cat((x1,x2), self.d)
+        x=self.channel_attention(x)
+        return x
+    
 class CBAM(nn.Module):
     # CSP Bottleneck with 3 convolutions
     def __init__(self, c1, c2, ratio=16, kernel_size=7):  # ch_in, ch_out, number, shortcut, groups, expansion
