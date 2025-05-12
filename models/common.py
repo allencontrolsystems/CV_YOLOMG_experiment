@@ -161,7 +161,7 @@ class Concat3(nn.Module):
         x = torch.cat((x1,x2), self.d)
         output = self.spatial_attention(x1, x2) * x
 
-        X=self.channel_attention(x)
+        # X=self.channel_attention(x)
         return output
     
 class Concat3fixed(nn.Module):
