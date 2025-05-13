@@ -6,6 +6,6 @@ val2: /home/acs/YOLOMG/full_data/ARD100_yolo/val2.txt
 
 # Classes
 nc: 1  # number of classes
-names: ['UAV']  # class names
+names: ['Drone']  # class names
 
 
