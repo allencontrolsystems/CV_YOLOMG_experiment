@@ -52,7 +52,7 @@ for video_count, video_sets in enumerate(sets):
 
     t1 = time.time()
     video_name = video_sets
-    cap = cv2.VideoCapture('/home/acs/YOLOMG/full_data/ARD100_dataset/train_video/' + video_name + '.mp4')
+    cap = cv2.VideoCapture('/home/ec2-user/YOLOMG/full_data/ARD100_dataset/train_video/' + video_name + '.mp4')
     lastFrame1 = None
     lastFrame2 = None
     count = 0
@@ -64,7 +64,7 @@ for video_count, video_sets in enumerate(sets):
 
         currentFrame = frame
         count = count + 1
-        save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/rgb/' + video_name
+        save_path = '/home/ec2-user/YOLOMG/full_data/phantom-dataset/images/' + video_name
 
         if not os.path.exists(save_path):
             os.makedirs(save_path)

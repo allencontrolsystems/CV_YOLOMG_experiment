@@ -1,11 +1,11 @@
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-train: /home/acs/YOLOMG/full_data/ARD100_yolo/train.txt
-train2: /home/acs/YOLOMG/full_data/ARD100_yolo/train2.txt
-val: /home/acs/YOLOMG/full_data/ARD100_yolo/val.txt
-val2: /home/acs/YOLOMG/full_data/ARD100_yolo/val2.txt
+train: /home/ec2-user/YOLOMG/full_data/ARD100_yolo/train.txt
+train2: /home/ec2-user/YOLOMG/full_data/ARD100_yolo/train2.txt
+val: /home/ec2-user/YOLOMG/full_data/ARD100_yolo/val.txt
+val2: /home/ec2-user/YOLOMG/full_data/ARD100_yolo/val2.txt
 
 # Classes
 nc: 1  # number of classes
-names: ['UAV']  # class names
+names: ['Drone']  # class names
 
 

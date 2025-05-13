@@ -61,13 +61,13 @@ set_gs = ['phantom03', 'phantom05', 'phantom47', 'phantom93']  # 400~1024
 video_lens = len(set1)
 for video_count, video_sets in enumerate(set1):
     id = video_sets
-    imgdir = "/home/acs/YOLOMG/full_data/phantom-dataset/images/" + id + "/"
-    annodir = '/home/acs/YOLOMG/full_data/phantom-dataset/annotations/' + id + '/'
-    maskdir = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + id + '/'
+    imgdir = "/home/ec2-user/YOLOMG/full_data/phantom-dataset/images/" + id + "/"
+    annodir = '/home/ec2-user/YOLOMG/full_data/phantom-dataset/annotations/' + id + '/'
+    maskdir = '/home/ec2-user/YOLOMG/full_data/phantom-dataset/mask31/' + id + '/'
 
-    imgdest = '/home/acs/YOLOMG/full_data/ARD100_mask31/images/'
-    annodest = '/home/acs/YOLOMG/full_data/ARD100_mask31/annotations/'
-    maskdest = '/home/acs/YOLOMG/full_data/ARD100_mask31/mask31/'
+    imgdest = '/home/ec2-user/YOLOMG/full_data/ARD100_mask31/images/'
+    annodest = '/home/ec2-user/YOLOMG/full_data/ARD100_mask31/annotations/'
+    maskdest = '/home/ec2-user/YOLOMG/full_data/ARD100_mask31/mask31/'
 
     if not os.path.exists(imgdest):
         os.makedirs(imgdest)

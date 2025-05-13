@@ -74,7 +74,7 @@ def FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count):
     #     os.makedirs(save_path)
     # cv2.imwrite(save_path + '/' + video_name + '_' + str(frame_count).zfill(4) + '.jpg', frameDiff)
 
-    save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + video_name
+    save_path = '/home/ec2-user/YOLOMG/full_data/phantom-dataset/mask31/' + video_name
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

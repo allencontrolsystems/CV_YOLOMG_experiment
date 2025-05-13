@@ -116,41 +116,55 @@ class SpatialAttention(nn.Module):
         x = self.sigmoid(x)
         return x
 
-# class Concat3(nn.Module):
-#     # Concatenate a list of tensors along dimension
-#     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
-#         super().__init__()
-#         self.d = dimension#沿着哪个维度进行拼接
-#         self.spatial_attention = SpatialAttention(7)
-#         self.channel_attention = ChannelAttention(c1, ratio)
-#     def forward(self, x1,x2):
-#         weight1 = self.spatial_attention(x1)
-#         weight2 = self.spatial_attention(x2)
-#         weight = (weight1/weight2)
-#         x2=weight*x2
-#         x1=x1*(2-weight)
-#         x = torch.cat((x1,x2), self.d)
-#         X=self.channel_attention(x)
-#         return x
-    
-# class Concat3fixed(nn.Module):
-#     # Concatenate a list of tensors along dimension
-#     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
-#         super().__init__()
-#         self.d = dimension#沿着哪个维度进行拼接
-#         self.spatial_attention = SpatialAttention(7)
-#         self.channel_attention = ChannelAttention(c1, ratio)
-#     def forward(self, x1,x2):
-#         weight1 = self.spatial_attention(x1)
-#         weight2 = self.spatial_attention(x2)
-#         weight = (weight1/weight2)
-#         x2=weight*x2
-#         x1=x1*(2-weight)
-#         x = torch.cat((x1,x2), self.d)
-#         X=self.channel_attention(x)
-#         return x * X
-
 class Concat3(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention(7)
+        # self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2):
+        weight1 = self.spatial_attention(x1)
+        weight2 = self.spatial_attention(x2)
+        weight = (weight1/weight2)
+        x2=weight*x2
+        x1=x1*(2-weight)
+        x = torch.cat((x1,x2), self.d)
+        # X=self.channel_attention(x)
+        return x
+    
+class Concat3fix01(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention(7)
+        self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2):
+        weight1 = self.spatial_attention(x1)
+        weight2 = self.spatial_attention(x2)
+        weight = (weight1/weight2)
+        x2=weight*x2
+        x1=x1*(2-weight)
+        x = torch.cat((x1,x2), self.d)
+        X=self.channel_attention(x)
+        return x * X
+
+class Concat3fix02(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention2(7)
+        # self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2):
+        x = torch.cat((x1,x2), self.d)
+        output = self.spatial_attention(x1, x2) * x
+
+        # X=self.channel_attention(x)
+        return output
+    
+class Concat3fix03(nn.Module):
     # Concatenate a list of tensors along dimension
     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
         super().__init__()
@@ -160,16 +174,15 @@ class Concat3(nn.Module):
     def forward(self, x1,x2):
         x = torch.cat((x1,x2), self.d)
         output = self.spatial_attention(x1, x2) * x
+        final_output =self.channel_attention(output) * output
+        return final_output
 
-        # X=self.channel_attention(x)
-        return output
-    
-class Concat3fixed(nn.Module):
+class Concat3fix04(nn.Module):
     # Concatenate a list of tensors along dimension
     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
         super().__init__()
         self.d = dimension#沿着哪个维度进行拼接
-        self.spatial_attention = SpatialAttention2(7)
+        self.spatial_attention = SpatialAttention3(7)
         self.channel_attention = ChannelAttention(c1, ratio)
     def forward(self, x1,x2):
         x = torch.cat((x1,x2), self.d)
@@ -196,6 +209,7 @@ class CBAM(nn.Module):
         # print('outchannels:{}'.format(out.shape))
         out = self.spatial_attention(out) * out
         return out
+
 class ChannelAttention2(nn.Module):
     def __init__(self, in_planes, ratio=16):
         super(ChannelAttention2, self).__init__()
@@ -217,6 +231,7 @@ class ChannelAttention2(nn.Module):
         max_out = self.f2(self.relu(self.f1(self.max_pool(x))))
         out = self.sigmoid(avg_out + max_out)
         return out
+
 class SpatialAttention2(nn.Module):
     def __init__(self,kernel_size=7):
         super(SpatialAttention2, self).__init__()
@@ -240,6 +255,31 @@ class SpatialAttention2(nn.Module):
         x = torch.cat([x1, x2], dim=1)
         x = self.conv(x)
         x = torch.exp(-(x - 0.5) ** 2 / (2 * 1 ** 2)) / (math.sqrt(2 * math.pi) *1)
+        return self.sigmoid(x)
+
+class SpatialAttention3(nn.Module):
+    def __init__(self,kernel_size=7):
+        super(SpatialAttention3, self).__init__()
+ 
+        assert kernel_size in (3, 7), 'kernel size must be 3 or 7'
+        padding = 3 if kernel_size == 7 else 1
+ 
+        self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
+        self.sigmoid = nn.Sigmoid()
+ 
+    def forward(self, x1, x2):
+        avg_out1 = torch.mean(x1, dim=1, keepdim=True)
+        max_out1,_ = torch.max(x1, dim=1, keepdim=True)
+        x1 = torch.cat([avg_out1, max_out1], dim=1)
+        x1 = self.conv(x1)
+        
+        avg_out2 = torch.mean(x2, dim=1, keepdim=True)
+        min_out2,_ = torch.min(x2, dim=1, keepdim=True)
+        x2 = torch.cat([avg_out2, min_out2], dim=1)
+        x2 = self.conv(x2)
+        x = torch.cat([x1, x2], dim=1)
+        x = self.conv(x)
+        # x = torch.exp(-(x - 0.5) ** 2 / (2 * 1 ** 2)) / (math.sqrt(2 * math.pi) *1)
         return self.sigmoid(x)
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
