@@ -7,7 +7,7 @@ from MOD_Functions import enlargebox
 kernel_size = 3
 
 
-def FD2_mask(lastFrame1, lastFrame2, frame_count, video_name):
+def FD2_mask(lastFrame1, lastFrame2, frame_count, video_name, save_location=None):
     lastFrame1 = cv2.GaussianBlur(lastFrame1, (11, 11), 0)
     lastFrame1 = cv2.cvtColor(lastFrame1, cv2.COLOR_BGR2GRAY)
 
@@ -32,7 +32,10 @@ def FD2_mask(lastFrame1, lastFrame2, frame_count, video_name):
     # close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
     # cv2.imshow('Morphological Operation', close_demo)
 
-    save_path = '/home/user-guo/data/drone-videos/Drone-vs-Bird/mask22/' + video_name
+    if save_location is None:
+        save_path = '/home/user-guo/data/drone-videos/Drone-vs-Bird/mask22/' + video_name
+    else:
+        save_path = save_location
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)

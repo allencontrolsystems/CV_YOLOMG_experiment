@@ -39,20 +39,26 @@ sets_NPS = ['Clip_01', 'Clip_02', 'Clip_03', 'Clip_04', 'Clip_05', 'Clip_06', 'C
             'Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46', 'Clip_47', 'Clip_48', 'Clip_49', 'Clip_50']
 
 sets_NPS_test = ['Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46', 'Clip_47', 'Clip_48', 'Clip_49', 'Clip_50']
+test_set = ["phantom41", "phantom47", "phantom119", "phantom22"]
 
 t1 = None
 t2 = None
-sets.extend(set0)
-videos_len = len(sets)
-for video_count, video_sets in enumerate(sets):
+videos_len = len(test_set)
+for video_count, video_sets in enumerate(test_set):
+    video_name = video_sets
+    image_save_path = '/home/acs/YOLOMG/demo_results/images/' + video_name
+    mask_save_path = '/home/acs/YOLOMG/demo_results/mask31/' + video_name
+    video_source_path = '/home/acs/YOLOMG/full_data/ARD100_dataset/test_video/' + video_name + '.mp4'
+
     if t1 is None:
         took = "N/A"
     else:
         took = t2 - t1
 
     t1 = time.time()
-    video_name = video_sets
-    cap = cv2.VideoCapture('/home/acs/YOLOMG/full_data/ARD100_dataset/train_video/' + video_name + '.mp4')
+
+    # cap = cv2.VideoCapture('/home/acs/YOLOMG/full_data/ARD100_dataset/train_video/' + video_name + '.mp4')
+    cap = cv2.VideoCapture(video_source_path)
     lastFrame1 = None
     lastFrame2 = None
     count = 0
@@ -64,11 +70,12 @@ for video_count, video_sets in enumerate(sets):
 
         currentFrame = frame
         count = count + 1
-        save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/rgb/' + video_name
+        # save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/images/' + video_name
+ 
 
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        cv2.imwrite(save_path + '/' + video_name + '_' + str(count).zfill(4) + '.jpg', currentFrame)
+        if not os.path.exists(image_save_path):
+            os.makedirs(image_save_path)
+        cv2.imwrite(image_save_path + '/' + video_name + '_' + str(count).zfill(4) + '.jpg', currentFrame)
 
         # frame = cv2.resize(frame, (1280, 1280), dst=None, interpolation=cv2.INTER_CUBIC)
 
@@ -81,7 +88,7 @@ for video_count, video_sets in enumerate(sets):
                 lastFrame2 = currentFrame
             continue
 
-        obj_num = FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, count-1)
+        obj_num = FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, count-1, mask_save_path)
 
         print('video name: ', video_name, end=' ')
         print('frame count: %d obj_num: %d' % (count-1, obj_num), f"{videos_len - video_count - 1} more videos to go and last video took {took} s") 

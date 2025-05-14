@@ -8,7 +8,7 @@ import imgviz
 kernel_size = 3
 
 
-def FD5_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count):
+def FD5_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count, save_path=None):
     lastFrame1 = cv2.GaussianBlur(lastFrame1, (11, 11), 0)
     lastFrame1 = cv2.cvtColor(lastFrame1, cv2.COLOR_BGR2GRAY)
 
@@ -67,8 +67,8 @@ def FD5_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count):
     # kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
     # close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
     # # cv2.imshow('Morphological Operation', close_demo)
-
-    save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask32/' + video_name
+    if save_path is None:
+        save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask32/' + video_name
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
