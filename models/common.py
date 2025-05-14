@@ -116,66 +116,66 @@ class SpatialAttention(nn.Module):
         x = self.sigmoid(x)
         return x
 
-class Concat3(nn.Module):
-    # Concatenate a list of tensors along dimension
-    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
-        super().__init__()
-        self.d = dimension#沿着哪个维度进行拼接
-        self.spatial_attention = SpatialAttention(7)
-        self.channel_attention = ChannelAttention(c1, ratio)
-    def forward(self, x1,x2):
-        weight1 = self.spatial_attention(x1)
-        weight2 = self.spatial_attention(x2)
-        weight = (weight1/weight2)
-        x2=weight*x2
-        x1=x1*(2-weight)
-        x = torch.cat((x1,x2), self.d)
-        X=self.channel_attention(x)
-        return x
-    
-class Concat3fixed(nn.Module):
-    # Concatenate a list of tensors along dimension
-    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
-        super().__init__()
-        self.d = dimension#沿着哪个维度进行拼接
-        self.spatial_attention = SpatialAttention(7)
-        self.channel_attention = ChannelAttention(c1, ratio)
-    def forward(self, x1,x2):
-        weight1 = self.spatial_attention(x1)
-        weight2 = self.spatial_attention(x2)
-        weight = (weight1/weight2)
-        x2=weight*x2
-        x1=x1*(2-weight)
-        x = torch.cat((x1,x2), self.d)
-        X=self.channel_attention(x)
-        return x * X
-
 # class Concat3(nn.Module):
 #     # Concatenate a list of tensors along dimension
 #     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
 #         super().__init__()
 #         self.d = dimension#沿着哪个维度进行拼接
-#         self.spatial_attention = SpatialAttention2(7)
+#         self.spatial_attention = SpatialAttention(7)
 #         self.channel_attention = ChannelAttention(c1, ratio)
 #     def forward(self, x1,x2):
+#         weight1 = self.spatial_attention(x1)
+#         weight2 = self.spatial_attention(x2)
+#         weight = (weight1/weight2)
+#         x2=weight*x2
+#         x1=x1*(2-weight)
 #         x = torch.cat((x1,x2), self.d)
-#         output = self.spatial_attention(x1, x2) * x
-
-#         # X=self.channel_attention(x)
-#         return output
+#         X=self.channel_attention(x)
+#         return x
     
 # class Concat3fixed(nn.Module):
 #     # Concatenate a list of tensors along dimension
 #     def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
 #         super().__init__()
 #         self.d = dimension#沿着哪个维度进行拼接
-#         self.spatial_attention = SpatialAttention2(7)
+#         self.spatial_attention = SpatialAttention(7)
 #         self.channel_attention = ChannelAttention(c1, ratio)
 #     def forward(self, x1,x2):
+#         weight1 = self.spatial_attention(x1)
+#         weight2 = self.spatial_attention(x2)
+#         weight = (weight1/weight2)
+#         x2=weight*x2
+#         x1=x1*(2-weight)
 #         x = torch.cat((x1,x2), self.d)
-#         output = self.spatial_attention(x1, x2) * x
-#         final_output =self.channel_attention(output) * output
-#         return final_output
+#         X=self.channel_attention(x)
+#         return x * X
+
+class Concat3(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention2(7)
+        self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2):
+        x = torch.cat((x1,x2), self.d)
+        output = self.spatial_attention(x1, x2) * x
+
+        # X=self.channel_attention(x)
+        return output
+    
+class Concat3fixed(nn.Module):
+    # Concatenate a list of tensors along dimension
+    def __init__(self, c1, c2, ratio=16, kernel_size=7,dimension=1):
+        super().__init__()
+        self.d = dimension#沿着哪个维度进行拼接
+        self.spatial_attention = SpatialAttention2(7)
+        self.channel_attention = ChannelAttention(c1, ratio)
+    def forward(self, x1,x2, save_path1, save_path2):
+        x = torch.cat((x1,x2), self.d)
+        output = self.spatial_attention(x1, x2, save_path1, save_path2) * x
+        final_output =self.channel_attention(output) * output
+        return final_output
     
 class CBAM(nn.Module):
     # CSP Bottleneck with 3 convolutions
@@ -227,7 +227,7 @@ class SpatialAttention2(nn.Module):
         self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
  
-    def forward(self, x1, x2):
+    def forward(self, x1, x2, save_path1=None, save_path2=None):
         avg_out1 = torch.mean(x1, dim=1, keepdim=True)
         max_out1,_ = torch.max(x1, dim=1, keepdim=True)
         x1 = torch.cat([avg_out1, max_out1], dim=1)
@@ -239,8 +239,20 @@ class SpatialAttention2(nn.Module):
         x2 = self.conv(x2)
         x = torch.cat([x1, x2], dim=1)
         x = self.conv(x)
+        if save_path1 is not None:
+            copied_x = x.clone()
+            copied_x = self.sigmoid(copied_x)
+            copied_x_numpy = copied_x.cpu().squeeze(0).numpy().transpose(1, 2, 0)
+            copied_x_numpy = (copied_x_numpy * 255).astype('uint8')
+            cv2.imwrite(save_path1, copied_x_numpy)
         x = torch.exp(-(x - 0.5) ** 2 / (2 * 1 ** 2)) / (math.sqrt(2 * math.pi) *1)
-        return self.sigmoid(x)
+        x = self.sigmoid(x)
+        if save_path2 is not None:
+            copied_x = x.clone()
+            copied_x_numpy = copied_x.cpu().squeeze(0).numpy().transpose(1, 2, 0)
+            copied_x_numpy = (copied_x_numpy * 255).astype('uint8')
+            cv2.imwrite(save_path2, copied_x_numpy)
+        return x
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
     result = nn.Sequential()

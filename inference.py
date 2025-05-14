@@ -88,13 +88,13 @@ class Yolov5Detector():
             img = img.unsqueeze(0)
         return img
 
-    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None):
+    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None, save_path1=None, save_path2=None):
         # Padded resize
         img1 = self.imgdeal(img1)
         img2 = self.imgdeal(img2)
         # print(img1.shape)
         # Inference
-        pred = self.model(img1, img2, augment=False)[0]
+        pred = self.model(img1, img2, augment=False, save_path1=save_path1, save_path2=save_path2)[0]
         # Apply NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes=classes, agnostic=False)
         
@@ -124,10 +124,10 @@ if __name__ == '__main__':
         video_sets.append(str(video.name))
 
     weights = {
-        "fix0": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix0/weights/best.pt",
-        "fix1": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix1/weights/best.pt",
+        # "fix0": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix0/weights/best.pt",
+        # "fix1": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix1/weights/best.pt",
         # "fix2": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix2/weights/best.pt",
-        # "fix3": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix3/weights/best.pt"
+        "fix3": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix3/weights/best.pt"
     }
 
 
@@ -143,15 +143,24 @@ if __name__ == '__main__':
             print(video_file)
 
             inference_image_folder = inference_result_folder / name / video_file
+            inference_image_folder_sa_before = inference_result_folder / name /(video_file + "spatial_attention_before")
+            inference_image_folder_sa_after = inference_result_folder / name /(video_file + "spatial_attention_after")
+
             inference_image_folder.mkdir(parents=True, exist_ok=True)
+            inference_image_folder_sa_before.mkdir(parents=True, exist_ok=True)
+            inference_image_folder_sa_after.mkdir(parents=True, exist_ok=True)
+
             video_mask_folder = masks_folder / video_file
             video_image_folder = images_folder / video_file
+
             for mask_file in video_mask_folder.iterdir():
                 image_file = video_image_folder / mask_file.name
                 if image_file.is_file():
                     image = cv2.imread(str(image_file))
                     mask = cv2.imread(str(mask_file))
-                    labels, scores, boxes = detector.run(image, mask, classes=[0, 1, 2, 3, 4]) # pedestrian, cyclist, car, bus, truck
+                    save_path1 = inference_image_folder_sa_before / mask_file.name
+                    save_path2 = inference_image_folder_sa_after / mask_file.name
+                    labels, scores, boxes = detector.run(image, mask, classes=[0, 1, 2, 3, 4], save_path1=save_path1, save_path2=save_path2) # pedestrian, cyclist, car, bus, truck
                     if labels:
                         for i in range(len(labels)):
                             image = draw_predictions(image, labels[i], scores[i], boxes[i])

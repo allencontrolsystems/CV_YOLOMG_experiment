@@ -111,7 +111,9 @@ if __name__ == '__main__':
                             conf = result.boxes.conf.tolist()[i]
                             x1, y1, x2, y2 = result.boxes.xyxy[i].detach().cpu().numpy().astype(int).tolist()
                             img_draw = draw_predictions(img_draw, "Drone", conf, (x1 + x_offset, y1 + y_offset, x2+x_offset, y2+y_offset))
-                    cv2.imwrite(str(inference_image_folder / image_file.name), img_draw)
+                    image_with_border = cv2.copyMakeBorder(image, 0, img_draw.shape[0] - image.shape[0], 0, 0, cv2.BORDER_CONSTANT, (0, 0, 0))
+                    save_image = cv2.hconcat((img_draw, image_with_border))
+                    cv2.imwrite(str(inference_image_folder / image_file.name), save_image)
 
                     # for resized image
                     results = detector.predict(full_res_image, imgsz=704, batch=1, conf=0.1, verbose=False) # pedestrian, cyclist, car, bus, truck

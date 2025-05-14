@@ -126,8 +126,8 @@ class Model(nn.Module):
         self.info()
         LOGGER.info('')
 
-    def forward(self, x1, x2, augment=False, profile=False, visualize=False):
-        return self._forward_once(x1, x2, profile, visualize)  # single-scale inference, train
+    def forward(self, x1, x2, augment=False, profile=False, visualize=False, save_path1=None, save_path2=None):
+        return self._forward_once(x1, x2, profile, visualize, save_path1=save_path1, save_path2=save_path2)  # single-scale inference, train
 
     def _forward_augment(self, x1,x2):
         img_size = x.shape[-2:]  # height, width
@@ -144,7 +144,7 @@ class Model(nn.Module):
         return torch.cat(y, 1), None  # augmented inference, train
 
     # 输入经过网络每一层
-    def _forward_once(self, x1, x2, profile=False, visualize=False):
+    def _forward_once(self, x1, x2, profile=False, visualize=False, save_path1=None, save_path2=None):
         y, dt = [], []  # outputs
         for m in self.model:
             if m.i<self.backbone1depth:
@@ -166,7 +166,7 @@ class Model(nn.Module):
                     self._profile_one_layer(m, x2, dt)
 
                 if m.type == 'models.common.Concat3'or m.type == 'models.common.Concat3fixed':
-                    x2 = m(x2,x1)  # run
+                    x2 = m(x2,x1, save_path1, save_path2)  # run
                 else:
                     x2 = m(x2)  # run
                     x1=x1
