@@ -39,7 +39,7 @@ sets_NPS = ['Clip_01', 'Clip_02', 'Clip_03', 'Clip_04', 'Clip_05', 'Clip_06', 'C
             'Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46', 'Clip_47', 'Clip_48', 'Clip_49', 'Clip_50']
 
 sets_NPS_test = ['Clip_41', 'Clip_42', 'Clip_43', 'Clip_44', 'Clip_45', 'Clip_46', 'Clip_47', 'Clip_48', 'Clip_49', 'Clip_50']
-test_set = ["phantom41(1)", "phantom47", "phantom119", "phantom22"]
+test_set = ["phantom41", "phantom47", "phantom119", "phantom22"]
 
 t1 = None
 t2 = None

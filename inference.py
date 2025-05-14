@@ -80,8 +80,6 @@ class Yolov5Detector():
         img = letterbox(img, self.imgsz, stride=self.stride)[0]
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1) # BGR to RGB, to 3x416x416
-        print(img.shape)
-        exit()
         img = np.ascontiguousarray(img)
         img = torch.from_numpy(img).to(self.device)
         img = img.half() if self.half else img.float() # uint8 to fp16/32
@@ -97,7 +95,6 @@ class Yolov5Detector():
         # print(img1.shape)
         # Inference
         pred = self.model(img1, img2, augment=False)[0]
-        
         # Apply NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes=classes, agnostic=False)
         
@@ -118,8 +115,20 @@ class Yolov5Detector():
 
 if __name__ == '__main__':
     mask = "mask31"
-    video_sets = ["phantom22", "phantom41(1)", "phantom47", "phantom101", "phantom119"]
-    weights = ["/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix0/weights/best.pt", "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix1/weights/best.pt", "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix2/weights/best.pt", "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix3/weights/best.pt"]
+    demo_result_path = Path("/home/acs/YOLOMG/demo_results")
+    masks_folder = demo_result_path / mask
+    images_folder = demo_result_path / "images"
+    inference_result_folder = demo_result_path / "inference"
+    video_sets = []
+    for video in images_folder.iterdir():
+        video_sets.append(str(video.name))
+
+    weights = {
+        "fix0": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix0/weights/best.pt",
+        "fix1": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix1/weights/best.pt",
+        # "fix2": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix2/weights/best.pt",
+        # "fix3": "/home/acs/YOLOMG/runs/train/ARD_mask31_640_fix3/weights/best.pt"
+    }
 
 
     demo_result_path = Path("/home/acs/YOLOMG/demo_results")
@@ -127,25 +136,24 @@ if __name__ == '__main__':
     images_folder = demo_result_path / "images"
     inference_result_folder = demo_result_path / "inference"
 
-    detector = Yolov5Detector(weights='./runs/train/ARD100_mask32-1280_uavs/weights/best.pt')
-    for weight in weights:
-        print(weight)
-        detector = Yolov5Detector(weights=weight)
+    for name, weight_path in weights.items():
+        print(name)
+        detector = Yolov5Detector(weights=weight_path, imgsz=640)
         for video_file in video_sets:
-            # 创建每个视频的图像文件夹
-            inference_image_folder = inference_result_folder / video_file
+            print(video_file)
+
+            inference_image_folder = inference_result_folder / name / video_file
             inference_image_folder.mkdir(parents=True, exist_ok=True)
             video_mask_folder = masks_folder / video_file
             video_image_folder = images_folder / video_file
-
             for mask_file in video_mask_folder.iterdir():
                 image_file = video_image_folder / mask_file.name
                 if image_file.is_file():
                     image = cv2.imread(str(image_file))
                     mask = cv2.imread(str(mask_file))
                     labels, scores, boxes = detector.run(image, mask, classes=[0, 1, 2, 3, 4]) # pedestrian, cyclist, car, bus, truck
-                    img_draw = image.copy()
                     if labels:
                         for i in range(len(labels)):
-                            img_draw = draw_predictions(img_draw, labels[i], scores[i], boxes[i])
-                    cv2.imwrite(str(inference_image_folder / mask_file.name), img_draw)
+                            image = draw_predictions(image, labels[i], scores[i], boxes[i])
+                    save_image = cv2.hconcat((image, mask))
+                    cv2.imwrite(str(inference_image_folder / mask_file.name), save_image)
