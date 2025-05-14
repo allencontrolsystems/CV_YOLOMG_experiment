@@ -1,9 +1,10 @@
-import os
-import time
 from pathlib import Path
+import random
+import json
+import xml.etree.ElementTree as ET
 
-import cv2
 import numpy as np
+import cv2
 
 from test_code.FD3_mask import FD3_mask
 
@@ -18,6 +19,7 @@ ANNOTATION_PATH = Path("/home/acs/YOLOMG/full_data/phantom-dataset/annotations")
 DESIRED_IMAGE_SAVE_PATH = Path("/home/acs/YOLOMG/evaluation_data")
 
 IMAGE_CROP_SIZE = 704
+RANDOMNESS_FOR_CROP_IMAGE = 5
 CLASSES = ["Drone"]
 
 def get_boundingbox(xml_file):
@@ -33,22 +35,68 @@ def get_boundingbox(xml_file):
         cls = obj.find('name').text
         if cls not in CLASSES or int(difficult) == 1:
             continue
-        cls_id = CLASSES.index(cls)
         xmlbox = obj.find('bndbox')
         b = (float(xmlbox.find('xmin').text), float(xmlbox.find('xmax').text), float(xmlbox.find('ymin').text),
              float(xmlbox.find('ymax').text))
-        b1, b2, b3, b4 = b
+        xmin, xmax, ymin, ymax = b
 
-        if b1 == 0:
-            b1 = 1
-        if b3 == 0:
-            b3 = 1
-        if b2 > w:
-            b2 = w
-        if b4 > h:
-            b4 = h
+        if xmin == 0:
+            xmin = 1
+        if ymin == 0:
+            ymin = 1
+        if xmax > w:
+            xmax = w
+        if ymax > h:
+            ymax = h
 
-    return (b1, b2, b3, b4)
+    return (xmin, xmax, ymin, ymax)
+
+
+def get_random_crop_around_target(image_shape, x_min, x_max, y_min, y_max, image_crop_size, randomness=0.25):
+    # Calculate center of bounding box
+    x_center = (x_min + x_max) / 2
+    y_center = (y_min + y_max) / 2
+
+    max_offset_x = int((x_max - x_min) * randomness)
+    max_offset_y = int((y_max - y_min) * randomness)
+
+    offset_x = random.randint(-max_offset_x, max_offset_x)
+    offset_y = random.randint(-max_offset_y, max_offset_y)
+
+    random_x_center = x_center + offset_x
+    random_y_center = y_center + offset_y
+
+    x_start = max(0, random_x_center - image_crop_size // 2)
+    y_start = max(0, random_y_center - image_crop_size // 2)
+
+    x_end = min(image_shape[1], x_start + image_crop_size)
+    y_end = min(image_shape[0], y_start + image_crop_size)
+
+    # Adjust crop start if we hit the edge
+    if x_end - x_start < image_crop_size:
+        x_start = max(0, x_end - image_crop_size)
+    if y_end - y_start < image_crop_size:
+        y_start = max(0, y_end - image_crop_size)
+
+    # Adjust bounding box coordinates for cropped image
+    new_x_min = max(0, x_min - x_start)
+    new_x_max = min(image_crop_size, x_max - x_start)
+    new_y_min = max(0, y_min - y_start)
+    new_y_max = min(image_crop_size, y_max - y_start)
+
+    return (x_start, x_end, y_start, y_end), (new_x_min, new_x_max, new_y_min, new_y_max)
+
+def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
+
+    annotation = {}
+    if x_min is not None:
+        annotation["bbox"] = [[x_min, y_min, x_max, y_max]]
+    else:
+        annotation["bbox"] = [[]]
+
+    with open(save_path, 'w') as f:
+        json.dump(annotation, f)
+
 
 if __name__ == "__main__":
 
@@ -71,6 +119,8 @@ if __name__ == "__main__":
         previous_2_frame = None
         frame_count = 0
 
+
+        previous_crop_x_start, previous_crop_x_end, previous_crop_y_start, previous_crop_y_end = 0, 0, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE
         while cv2_video_capture.isOpened():
             ret, frame = cv2_video_capture.read()
             if not ret:
@@ -79,8 +129,26 @@ if __name__ == "__main__":
             current_frame = frame
             frame_count += 1
 
-            cv2.imwrite(str(image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), current_frame)
+            file_name_to_save = video_name + '_' + str(frame_count).zfill(4)
+            cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
+            annotation_xml_path = Path(ANNOTATION_PATH / (file_name_to_save + '.xml'))
 
+            bbox = get_boundingbox(annotation_xml_path)
+            if bbox is not None: # case there is annotation for drone
+                x_min, x_max, y_min, y_max = bbox
+
+                (crop_x_start, crop_x_end, crop_y_start, crop_y_end), (new_x_min, new_x_max, new_y_min, new_y_max) = get_random_crop_around_target(current_frame.shape, x_min, x_max, y_min, y_max, image_crop_size=IMAGE_CROP_SIZE, randomness=RANDOMNESS_FOR_CROP_IMAGE)
+                cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), current_frame[crop_y_start:crop_y_end, crop_x_start:crop_x_end, :])
+
+                save_annotation(image_save_path / (file_name_to_save + ".json"), x_min, x_max, y_min, y_max)
+                save_annotation(cropped_image_save_path / (file_name_to_save + ".json"), new_x_min, new_x_max, new_y_min, new_y_max)
+
+                previous_crop_x_start, previous_crop_x_end, previous_crop_y_start, previous_crop_y_end = crop_x_start, crop_x_end, crop_y_start, crop_y_end
+
+            else: # case there is no annotation for drone
+                cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), current_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end, :])
+                save_annotation(image_save_path / (file_name_to_save + ".json"))
+                save_annotation(cropped_image_save_path / (file_name_to_save + ".json"))
 
             if previous_1_frame is None:
                 if previous_2_frame is None:
@@ -88,6 +156,10 @@ if __name__ == "__main__":
                 else:
                     previous_2_frame = current_frame
                 continue
+
+            difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame, video_name, frame_count-1)
+            cv2.imwrite(motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4)+ '.jpg'), difference_frame)
+            cv2.imwrite(cropped_motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg'), difference_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end, :])
 
 
 
