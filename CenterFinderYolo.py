@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import ultralytics
 
+sys.path.append(os.path.abspath('../cv-common'))
 from inference.CenterFinderBase import CenterFinderBase, DroneCenterPixel, BoundingBox, DEVICE
 
 class CenterFinderYolo(CenterFinderBase):

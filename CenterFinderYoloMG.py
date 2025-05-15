@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import torch
 
+sys.path.append(os.path.abspath('../cv-common'))
 from inference.CenterFinderBase import CenterFinderBase, DroneCenterPixel, BoundingBox, DEVICE
 from inference_yolomg import Yolov5Detector
 
