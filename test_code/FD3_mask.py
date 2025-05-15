@@ -1,8 +1,8 @@
 import cv2
 import os
 import numpy as np
-from MOD_Functions import motion_compensate
-from MOD_Functions import enlargebox
+from test_code.MOD_Functions import motion_compensate
+from test_code.MOD_Functions import enlargebox
 import imgviz
 
 kernel_size = 3
@@ -74,12 +74,12 @@ def FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count, save
     #     os.makedirs(save_path)
     # cv2.imwrite(save_path + '/' + video_name + '_' + str(frame_count).zfill(4) + '.jpg', frameDiff)
     
-    if save_path is None:
-        save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + video_name
-
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    cv2.imwrite(save_path + '/' + video_name + '_' + str(frame_count).zfill(4) + '.jpg', frameDiff)
+    # if save_path is None:
+    #     save_path = '/home/acs/YOLOMG/full_data/phantom-dataset/mask31/' + video_name
+    #
+    # if not os.path.exists(save_path):
+    #     os.makedirs(save_path)
+    # cv2.imwrite(save_path + '/' + video_name + '_' + str(frame_count).zfill(4) + '.jpg', frameDiff)
 
     # contours, hierarchy = cv2.findContours(close_demo.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     #
@@ -99,4 +99,4 @@ def FD3_mask(lastFrame1, lastFrame2, currentFrame, video_name, frame_count, save
     # rect_merge = rect_list
     # obj_num = len(rect_merge)
 
-    return 0
+    return frameDiff
