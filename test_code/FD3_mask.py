@@ -1,8 +1,8 @@
 import cv2
 import os
 import numpy as np
-from MOD_Functions import motion_compensate
-from MOD_Functions import enlargebox
+from test_code.MOD_Functions import motion_compensate
+from test_code.MOD_Functions import enlargebox
 import imgviz
 
 kernel_size = 3

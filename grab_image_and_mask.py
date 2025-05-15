@@ -2,8 +2,8 @@ from pathlib import Path
 import random
 import json
 import xml.etree.ElementTree as ET
+import time
 
-import numpy as np
 import cv2
 
 from test_code.FD3_mask import FD3_mask
@@ -49,13 +49,14 @@ def get_boundingbox(xml_file):
         if ymax > h:
             ymax = h
 
-    return (xmin, xmax, ymin, ymax)
+        return (xmin, xmax, ymin, ymax)
+    return None
 
 
 def get_random_crop_around_target(image_shape, x_min, x_max, y_min, y_max, image_crop_size, randomness=0.25):
     # Calculate center of bounding box
-    x_center = (x_min + x_max) / 2
-    y_center = (y_min + y_max) / 2
+    x_center = (x_min + x_max) // 2
+    y_center = (y_min + y_max) // 2
 
     max_offset_x = int((x_max - x_min) * randomness)
     max_offset_y = int((y_max - y_min) * randomness)
@@ -84,7 +85,7 @@ def get_random_crop_around_target(image_shape, x_min, x_max, y_min, y_max, image
     new_y_min = max(0, y_min - y_start)
     new_y_max = min(image_crop_size, y_max - y_start)
 
-    return (x_start, x_end, y_start, y_end), (new_x_min, new_x_max, new_y_min, new_y_max)
+    return (int(x_start), int(x_end), int(y_start), int(y_end)), (new_x_min, new_x_max, new_y_min, new_y_max)
 
 def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
 
@@ -100,7 +101,13 @@ def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
 
 if __name__ == "__main__":
 
+    t1 = None
+    t2 = None
+    videos_len = len(ARD_test_videos)
+
     for video_count, video_name in enumerate(ARD_test_videos):
+
+        t1 = time.time()
 
         image_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "rgb_images"
         motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "motion31_images"
@@ -131,7 +138,7 @@ if __name__ == "__main__":
 
             file_name_to_save = video_name + '_' + str(frame_count).zfill(4)
             cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
-            annotation_xml_path = Path(ANNOTATION_PATH / (file_name_to_save + '.xml'))
+            annotation_xml_path = Path(ANNOTATION_PATH / video_name / (file_name_to_save + '.xml'))
 
             bbox = get_boundingbox(annotation_xml_path)
             if bbox is not None: # case there is annotation for drone
@@ -150,8 +157,8 @@ if __name__ == "__main__":
                 save_annotation(image_save_path / (file_name_to_save + ".json"))
                 save_annotation(cropped_image_save_path / (file_name_to_save + ".json"))
 
-            if previous_1_frame is None:
-                if previous_2_frame is None:
+            if previous_2_frame is None:
+                if previous_1_frame is None:
                     previous_1_frame = current_frame
                 else:
                     previous_2_frame = current_frame
@@ -159,7 +166,14 @@ if __name__ == "__main__":
 
             difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame, video_name, frame_count-1)
             cv2.imwrite(motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4)+ '.jpg'), difference_frame)
-            cv2.imwrite(cropped_motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg'), difference_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end, :])
+            cv2.imwrite(cropped_motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg'), difference_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end])
+
+            previous_1_frame = previous_2_frame
+            previous_2_frame = current_frame
+
+        cv2_video_capture.release()
+        t2 = time.time()
+        print(f"{videos_len - video_count - 1} more videos to go and last video took {t2 - t1} s")
 
 
 
