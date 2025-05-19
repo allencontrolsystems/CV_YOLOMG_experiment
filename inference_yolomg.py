@@ -88,13 +88,13 @@ class Yolov5Detector():
             img = img.unsqueeze(0)
         return img
 
-    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None, save_path1=None, save_path2=None):
+    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None):
         # Padded resize
         img1 = self.imgdeal(img1)
         img2 = self.imgdeal(img2)
         # print(img1.shape)
         # Inference
-        pred = self.model(img1, img2, augment=False, save_path1=save_path1, save_path2=save_path2)[0]
+        pred = self.model(img1, img2, augment=False)[0]
         # Apply NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes=classes, agnostic=False)
         

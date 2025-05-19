@@ -58,7 +58,7 @@ def draw_predictions(img, label, score, box, color=(156, 39, 176), location=None
     
 class Yolov5Detector():
     def __init__(self, weights=''):
-        imgsz = 1280
+        imgsz = 5312
         self.device = device = select_device('0')
         self.half = half = device.type != 'cpu' # half precision only supported on CUDA
         
@@ -91,6 +91,7 @@ class Yolov5Detector():
 
     def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None):
         # Padded resize
+        original_shape = (4608, 5312, 3)
         img1 = self.imgdeal(img1)
         img2 = self.imgdeal(img2)
         # print(img1.shape)
@@ -106,7 +107,7 @@ class Yolov5Detector():
         if len(det):
             # Rescale boxes from imgsz to img0 size
             # boxes = scale_coords(img1.shape[2:], det[:, :4], img1.shape).round().cpu().numpy() # xyxy
-            img0_shape = torch.from_numpy(np.array([1080, 1920])).to(self.device)
+            img0_shape = torch.from_numpy(np.array([original_shape[0], original_shape[1]])).to(self.device)
             boxes = scale_coords(img1.shape[2:], det[:, :4], img0_shape).round().cpu().numpy() # xyxy
             labels = [self.names[int(cls)] for cls in det[:, -1]]
             scores = [float('%.2f' % conf) for conf in det[:, -2]]
