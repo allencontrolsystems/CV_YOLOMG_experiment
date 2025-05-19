@@ -16,13 +16,10 @@ ARD_test_videos = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom0
         'phantom92', 'phantom93', 'phantom94', 'phantom95', 'phantom97', 'phantom102', 'phantom110',
         'phantom113', 'phantom119', 'phantom133', 'phantom135', 'phantom136', 'phantom141', 'phantom144']
 
-GUNCAM_bursts = ["15_05_2025__22_03_51", "15_05_2025__22_01_34"]
-# GUNCAM_bursts = ["15_05_2025__22_01_34"]
+GUNCAM_bursts = ["15_05_2025__22_03_51"]
 
 IMAGES_PATH = Path(r"C:\Users\micha\Downloads\from_google_drive")
-# ANNOTATION_PATH = Path("/home/acs/YOLOMG/full_data/phantom-dataset/annotations")
 ANNOTATION_PATH = None
-# DESIRED_IMAGE_SAVE_PATH = Path("/home/acs/YOLOMG/evaluation_data")
 DESIRED_IMAGE_SAVE_PATH = Path(r"C:\Users\micha\YOLOMG\videos")
 
 IMAGE_CROP_SIZE = 704
@@ -108,17 +105,17 @@ def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
 
 if __name__ == "__main__":
 
-
-    detector = Yolov5Detector(r"C:\Users\micha\YOLOMG\runs\train\ARD100_mask32-1280_uavs\weights\best.pt")
+    detector_imgsz = 1280
+    detector = Yolov5Detector(r"C:\Users\micha\YOLOMG\runs\train\ARD100_mask32-1280_uavs\weights\best.pt", imgsz=detector_imgsz)
+    VIDEO_SAVE_SIZE = (3756, 3258)
 
     for guncam_burst in GUNCAM_bursts:
-        print(guncam_burst)
         guncam_image_path = IMAGES_PATH / guncam_burst
 
         image_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / "rgb_images"
         motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / "motion31_images"
         inference_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / "inference_result"
-        video_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / "video_result"
+        video_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst
 
         image_save_path.mkdir(parents=True, exist_ok=True)
         motion_map_save_path.mkdir(parents=True, exist_ok=True)
@@ -130,7 +127,7 @@ if __name__ == "__main__":
         frame_count = 0
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        cv2_video_writer = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}.mp4"), fourcc, 30, (3756, 3258))
+        cv2_video_writer = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}_{detector_imgsz}.mp4"), fourcc, 30, VIDEO_SAVE_SIZE)
 
         for image_file in sorted(guncam_image_path.iterdir()):
 
@@ -159,7 +156,7 @@ if __name__ == "__main__":
                         image = draw_predictions(image_draw, labels[i], scores[i], boxes[i])
                 cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
 
-                image_draw = cv2.resize(image_draw, (3756, 3258))
+                image_draw = cv2.resize(image_draw, VIDEO_SAVE_SIZE)
                 cv2_video_writer.write(image_draw)
 
                 previous_1_frame = previous_2_frame
