@@ -3,6 +3,8 @@ import random
 import json
 import xml.etree.ElementTree as ET
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 
@@ -14,9 +16,19 @@ ARD_test_videos = ['phantom02', 'phantom03', 'phantom04', 'phantom05', 'phantom0
         'phantom92', 'phantom93', 'phantom94', 'phantom95', 'phantom97', 'phantom102', 'phantom110',
         'phantom113', 'phantom119', 'phantom133', 'phantom135', 'phantom136', 'phantom141', 'phantom144']
 
-VIDEOS_PATH = Path("/home/acs/YOLOMG/full_data/ARD100_dataset/test_video")
+ARD_train_videos = ['phantom09', 'phantom10', 'phantom14', 'phantom17', 'phantom19', 'phantom20', 'phantom28', 'phantom29', 'phantom30', 'phantom32',
+        'phantom36', 'phantom40', 'phantom42', 'phantom43', 'phantom44', 'phantom46', 'phantom63', 'phantom65', 'phantom66', 'phantom68',
+        'phantom70', 'phantom71', 'phantom74', 'phantom75', 'phantom76', 'phantom77', 'phantom78', 'phantom80', 'phantom81', 'phantom82',
+        'phantom84', 'phantom85', 'phantom86', 'phantom87', 'phantom89', 'phantom90', 'phantom101', 'phantom103', 'phantom104', 'phantom105',
+        'phantom106', 'phantom107', 'phantom108', 'phantom109', 'phantom111', 'phantom112', 'phantom114', 'phantom115', 'phantom116', 'phantom117',
+        'phantom118', 'phantom120', 'phantom132', 'phantom137', 'phantom138', 'phantom139', 'phantom140', 'phantom142', 'phantom143', 'phantom145',
+        'phantom146', 'phantom147', 'phantom148', 'phantom149', 'phantom150']
+
+VIDEOS_PATH = Path("/home/acs/YOLOMG/full_data/ARD100_dataset/train_video")
 ANNOTATION_PATH = Path("/home/acs/YOLOMG/full_data/phantom-dataset/annotations")
-DESIRED_IMAGE_SAVE_PATH = Path("/home/acs/YOLOMG/evaluation_data")
+DESIRED_IMAGE_SAVE_PATH = Path("/home/acs/YOLOMG/cropped_training_data")
+DESIRED_yolo11_IMAGE_SAVE_PATH = Path("/home/acs/YOLOMG/yolo11_cropped_training_data")
+DESIRED_cropped_yolomg_PATH = Path("/home/acs/YOLOMG/full_data/ARD100_cropped/")
 
 IMAGE_CROP_SIZE = 704
 RANDOMNESS_FOR_CROP_IMAGE = 5
@@ -98,26 +110,43 @@ def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
     with open(save_path, 'w') as f:
         json.dump(annotation, f)
 
+def save_normalized_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None, save_kp=False):
+    
+    bbox_center_x, bbox_center_y = (x_max + x_min) / 2, (y_max + y_min) / 2
+    center_x, center_y = bbox_center_x, bbox_center_y
+    bbox_height, bbox_width = y_max - y_min, x_max - x_min
 
-if __name__ == "__main__":
+    normalized_center_x, normalized_center_y = center_x / IMAGE_CROP_SIZE, center_y / IMAGE_CROP_SIZE
+    normalized_bbox_width, normalized_bbox_height = bbox_width / IMAGE_CROP_SIZE, bbox_height / IMAGE_CROP_SIZE
+    normalized_bbox_center_x, normalized_bbox_center_y = bbox_center_x / IMAGE_CROP_SIZE, bbox_center_y / IMAGE_CROP_SIZE
 
-    t1 = None
-    t2 = None
-    videos_len = len(ARD_test_videos)
+    with open(save_path, "w") as f:
+        if save_kp: 
+            f.write(f"0 {normalized_center_x} {normalized_center_y} {normalized_bbox_width} {normalized_bbox_height} {normalized_bbox_center_x} {normalized_bbox_center_y}")
+        else:
+            f.write(f"0 {normalized_center_x} {normalized_center_y} {normalized_bbox_width} {normalized_bbox_height}")
 
-    for video_count, video_name in enumerate(ARD_test_videos):
+def get_training_data(video_name):
 
-        t1 = time.time()
+        # image_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "rgb_images"
+        # motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "motion31_images"
+        # cropped_image_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "cropped_rgb_images"
+        # cropped_motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "cropped_motion31_images"
+        yolo11_cropped_image_save_path = DESIRED_yolo11_IMAGE_SAVE_PATH / "images"
+        yolo11_cropped_label_save_path = DESIRED_yolo11_IMAGE_SAVE_PATH / "labels"
+        yolomg_cropped_image_save_path = DESIRED_cropped_yolomg_PATH / "images"
+        yolomg_cropped_label_save_path = DESIRED_cropped_yolomg_PATH / "labels"
+        yolomg_cropped_image2_save_path = DESIRED_cropped_yolomg_PATH / "mask31"
 
-        image_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "rgb_images"
-        motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "motion31_images"
-        cropped_image_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "cropped_rgb_images"
-        cropped_motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / video_name / "cropped_motion31_images"
-
-        image_save_path.mkdir(parents=True, exist_ok=True)
-        motion_map_save_path.mkdir(parents=True, exist_ok=True)
-        cropped_image_save_path.mkdir(parents=True, exist_ok=True)
-        cropped_motion_map_save_path.mkdir(parents=True, exist_ok=True)
+        # image_save_path.mkdir(parents=True, exist_ok=True)
+        # motion_map_save_path.mkdir(parents=True, exist_ok=True)
+        # cropped_image_save_path.mkdir(parents=True, exist_ok=True)
+        # cropped_motion_map_save_path.mkdir(parents=True, exist_ok=True)
+        yolo11_cropped_image_save_path.mkdir(parents=True, exist_ok=True)
+        yolo11_cropped_label_save_path.mkdir(parents=True, exist_ok=True)
+        yolomg_cropped_image_save_path.mkdir(parents=True, exist_ok=True)
+        yolomg_cropped_label_save_path.mkdir(parents=True, exist_ok=True)
+        yolomg_cropped_image2_save_path.mkdir(parents=True, exist_ok=True)
 
         video_path = VIDEOS_PATH / (video_name + '.mp4')
 
@@ -137,7 +166,7 @@ if __name__ == "__main__":
             frame_count += 1
 
             file_name_to_save = video_name + '_' + str(frame_count).zfill(4)
-            cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
+            # cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
             annotation_xml_path = Path(ANNOTATION_PATH / video_name / (file_name_to_save + '.xml'))
 
             bbox = get_boundingbox(annotation_xml_path)
@@ -145,17 +174,24 @@ if __name__ == "__main__":
                 x_min, x_max, y_min, y_max = bbox
 
                 (crop_x_start, crop_x_end, crop_y_start, crop_y_end), (new_x_min, new_x_max, new_y_min, new_y_max) = get_random_crop_around_target(current_frame.shape, x_min, x_max, y_min, y_max, image_crop_size=IMAGE_CROP_SIZE, randomness=RANDOMNESS_FOR_CROP_IMAGE)
-                cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), current_frame[crop_y_start:crop_y_end, crop_x_start:crop_x_end, :])
+                cropped_current_frame = current_frame[crop_y_start:crop_y_end, crop_x_start:crop_x_end, :]
 
-                save_annotation(image_save_path / (file_name_to_save + ".json"), x_min, x_max, y_min, y_max)
-                save_annotation(cropped_image_save_path / (file_name_to_save + ".json"), new_x_min, new_x_max, new_y_min, new_y_max)
+                # cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), cropped_current_frame)
 
+                # save_annotation(image_save_path / (file_name_to_save + ".json"), x_min, x_max, y_min, y_max)
+                # save_annotation(cropped_image_save_path / (file_name_to_save + ".json"), new_x_min, new_x_max, new_y_min, new_y_max)
+
+                # save training data for yolo11
+                cv2.imwrite(str(yolo11_cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), cropped_current_frame)
+                save_normalized_annotation(str(yolo11_cropped_label_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.txt')), new_x_min, new_x_max, new_y_min, new_y_max, save_kp=True)
+                
                 previous_crop_x_start, previous_crop_x_end, previous_crop_y_start, previous_crop_y_end = crop_x_start, crop_x_end, crop_y_start, crop_y_end
 
             else: # case there is no annotation for drone
-                cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), current_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end, :])
-                save_annotation(image_save_path / (file_name_to_save + ".json"))
-                save_annotation(cropped_image_save_path / (file_name_to_save + ".json"))
+                cropped_current_frame = current_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end, :]
+                # cv2.imwrite(str(cropped_image_save_path / (video_name + '_' + str(frame_count).zfill(4) + '.jpg')), cropped_current_frame)
+                # save_annotation(image_save_path / (file_name_to_save + ".json"))
+                # save_annotation(cropped_image_save_path / (file_name_to_save + ".json"))
 
             if previous_2_frame is None:
                 if previous_1_frame is None:
@@ -165,15 +201,33 @@ if __name__ == "__main__":
                 continue
 
             difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame, video_name, frame_count-1)
-            cv2.imwrite(motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4)+ '.jpg'), difference_frame)
-            cv2.imwrite(cropped_motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg'), difference_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end])
+            # cv2.imwrite(motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4)+ '.jpg'), difference_frame)
+            cropped_difference_frame = difference_frame[previous_crop_y_start:previous_crop_y_end, previous_crop_x_start:previous_crop_x_end]
+            # cv2.imwrite(cropped_motion_map_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg'), cropped_difference_frame)
+
+            cv2.imwrite(str(yolomg_cropped_image_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg')), cropped_current_frame)
+            cv2.imwrite(str(yolomg_cropped_image2_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.jpg')), cropped_difference_frame)
+            if bbox is not None:
+                save_normalized_annotation(str(yolomg_cropped_label_save_path / (video_name + '_' + str(frame_count-1).zfill(4) + '.txt')), new_x_min, new_x_max, new_y_min, new_y_max, save_kp=False)
 
             previous_1_frame = previous_2_frame
             previous_2_frame = current_frame
 
         cv2_video_capture.release()
-        t2 = time.time()
-        print(f"{videos_len - video_count - 1} more videos to go and last video took {t2 - t1} s")
+
+if __name__ == "__main__":
+
+    with ThreadPoolExecutor(max_workers=48) as e:
+        for video_name in ARD_train_videos:
+            e.submit(get_training_data, video_name)
+
+
+    # for video_count, video_name in enumerate(ARD_train_videos):
+
+        # t2 = time.time()
+        # took = t2 - t1
+        # videos_left_to_go = videos_len - video_count - 1
+        # print(f"{videos_left_to_go} more videos to go and last video took {took} s, estimate to take {round(took * videos_left_to_go / 60, 2)} more mins")
 
 
 

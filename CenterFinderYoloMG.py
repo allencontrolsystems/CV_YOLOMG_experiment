@@ -32,7 +32,7 @@ class CenterFinderYoloMG(CenterFinderBase):
                     max_det: int = 100,
                     img_sz: Tuple[int, int] = None) -> List[DroneCenterPixel]:
 
-        labels, scores, boxes = self.model(rgb_img, motion_img, classes=[0, 1, 2, 3, 4])
+        labels, scores, boxes = self.model.run(rgb_img, motion_img, classes=[0, 1, 2, 3, 4])
         centers = []
 
         if labels:
@@ -40,12 +40,14 @@ class CenterFinderYoloMG(CenterFinderBase):
             for i in range(len(labels)):
 
                 conf = scores[i]
-                u1, v1, u2, v2 = int(boxes[i][0]), int(boxes[i][1]), int(boxes[i][2]), int(boxes[i][3])
+                x1, y1, x2, y2 = int(boxes[i][0]), int(boxes[i][1]), int(boxes[i][2]), int(boxes[i][3])
+                center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
+
 
                 current_bounding_box = BoundingBox(start_x=x1, start_y=y1,
                                                    end_x=x2, end_y=y2)
-                new_center = DroneCenterPixel(x=float(raw_center[0]),
-                                              y=float(raw_center[1]),
+                new_center = DroneCenterPixel(x=center_x,
+                                              y=center_y,
                                               confidence=conf,
                                               bounding_box=current_bounding_box)
                 centers.append(new_center)

@@ -10,6 +10,7 @@ import ultralytics
 
 sys.path.append(os.path.abspath('../cv-common'))
 from inference.CenterFinderBase import CenterFinderBase, DroneCenterPixel, BoundingBox, DEVICE
+from evaluation.evaluate import evaluate
 
 class CenterFinderYolo(CenterFinderBase):
 
@@ -78,3 +79,20 @@ class CenterFinderYolo(CenterFinderBase):
             centers = sorted(centers, key=lambda x: x.confidence, reverse=True)
 
         return centers
+
+if __name__ == "__main__":
+
+    datasets = [
+        {
+            "name": "phantom02",
+            "dataset_dir": "cropped_rgb_images",
+            "ext": ".jpg",
+        },
+    ]
+
+    model_path = "epoch19.pt"
+    conf_threshold = 0
+
+    center_finder = CenterFinderYolo(model_weight=model_path, conf=conf_threshold)
+
+    evaluate(center_finder=center_finder, dataset_base_dir="/home/acs/YOLOMG/evaluation_data/phantom02", datasets=datasets, save_inferences=True, output_dir="/home/acs/YOLOMG/tmp")
