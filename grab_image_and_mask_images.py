@@ -11,8 +11,9 @@ import numpy as np
 from ultralytics import YOLO
 from test_code.FD3_mask import FD3_mask
 from dualdetector import Yolov5Detector, draw_predictions
+from utils.augmentations import letterbox
 
-GUNCAM_bursts = ["15_05_2025__20_21_34"]
+GUNCAM_bursts = ["15_05_2025__19_52_28"]
 
 IMAGES_PATH = Path(r"C:\Users\micha\rosie_data")
 ANNOTATION_PATH = None
@@ -21,8 +22,9 @@ DESIRED_IMAGE_SAVE_PATH = Path(r"C:\Users\micha\YOLOMG\videos")
 IMAGE_CROP_SIZE = 704
 RANDOMNESS_FOR_CROP_IMAGE = 5
 CLASSES = ["Drone"]
+IMAGE_TILE = (1920, 1080)
 
-def tile_image(image, tile_size=(1280, 720), overlap=200):
+def tile_image(image, tile_size=IMAGE_TILE, overlap=200):
     tiles = []
     tile_w, tile_h = tile_size
 
@@ -47,7 +49,7 @@ def tile_image(image, tile_size=(1280, 720), overlap=200):
     return tiles, padded_image.shape[:2]
 
 
-def tile_dual_images(img1, img2=None, tile_size=(1280, 720), overlap=200):
+def tile_dual_images(img1, img2=None, tile_size=IMAGE_TILE, overlap=200):
     tiles1 = []
     tiles2 = []
     tile_w, tile_h = tile_size
@@ -82,13 +84,14 @@ def tile_dual_images(img1, img2=None, tile_size=(1280, 720), overlap=200):
         return tiles1, padded_img1.shape[:2]
 
 
-def run_yolo_pose_on_tiles(tiles1, detector, conf_threshold=0.1, tiles2=None):
+def run_yolo_pose_on_tiles(tiles1, detector, conf_threshold=0.1, tiles2=None, save_path=None, file_name=None):
     detections = []
 
     for i in range(len(tiles1)):
         tile, (x_offset, y_offset) = tiles1[i]
         tile2, _ = tiles2[i]
-        labels, scores, boxes = detector.run(tile, tile2, classes=[0, 1, 2, 3, 4])
+        image_save_file = save_path / (file_name + f"_{i}.jpg")
+        labels, scores, boxes = detector.run(tile, tile2, classes=[0, 1, 2, 3, 4], img_save_path=image_save_file)
 
         for box, score, label in zip(boxes, scores, labels):
             adjusted_box = [box[0] + x_offset, box[1] + y_offset, box[2] + x_offset, box[3] + y_offset]
@@ -97,7 +100,7 @@ def run_yolo_pose_on_tiles(tiles1, detector, conf_threshold=0.1, tiles2=None):
     return detections
 
 
-def visualize_detections(image, detections, tile_size=(1280, 720), overlap=200):
+def visualize_detections(image, detections, tile_size=IMAGE_TILE, overlap=200):
     tile_w, tile_h = tile_size
     step_x = tile_w - overlap
     step_y = tile_h - overlap
@@ -207,11 +210,17 @@ if __name__ == "__main__":
         image_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"rgb_images_{detector_imgsz}"
         motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"motion31_images_{detector_imgsz}"
         inference_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"inference_result_{detector_imgsz}"
+        inference_tile_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"inference_tile_result_{detector_imgsz}"
+        input_tile_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"input_tile_result_{detector_imgsz}"
+        input_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"input_result_{detector_imgsz}"
         video_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst
 
         image_save_path.mkdir(parents=True, exist_ok=True)
         motion_map_save_path.mkdir(parents=True, exist_ok=True)
         inference_save_path.mkdir(parents=True, exist_ok=True)
+        inference_tile_save_path.mkdir(parents=True, exist_ok=True)
+        input_tile_save_path.mkdir(parents=True, exist_ok=True)
+        input_save_path.mkdir(parents=True, exist_ok=True)
         video_save_path.mkdir(parents=True, exist_ok=True)
 
         previous_1_frame = None
@@ -219,14 +228,15 @@ if __name__ == "__main__":
         frame_count = 0
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        cv2_video_writer = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}_{detector_imgsz}_yolomg_tiled.mp4"), fourcc, 30, VIDEO_SAVE_SIZE)
-        # cv2_video_writer_motion = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}_motion_{detector_imgsz}.mp4"), fourcc, 30, VIDEO_SAVE_SIZE)
+        cv2_video_writer = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}_{detector_imgsz}.mp4"), fourcc, 30, VIDEO_SAVE_SIZE)
+        cv2_video_writer_tile = cv2.VideoWriter(str(video_save_path / f"{guncam_burst}_{detector_imgsz}_tiled.mp4"), fourcc, 30, VIDEO_SAVE_SIZE)
 
         for image_file in sorted(guncam_image_path.iterdir()):
 
             if image_file.suffix == ".bmp":
                 frame = cv2.imread(str(image_file))
                 current_frame = frame
+                current_frame = letterbox(current_frame, 1920, stride=16)[0]
                 frame_count += 1
 
                 # tiles, padded_shape = tile_image(current_frame)
@@ -243,27 +253,31 @@ if __name__ == "__main__":
                         previous_1_frame = current_frame
                     else:
                         previous_2_frame = current_frame
+                        print(current_frame.shape)
                     continue
 
                 difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame).astype(np.uint8)
                 difference_frame = cv2.cvtColor(difference_frame, cv2.COLOR_GRAY2BGR)
                 cv2.imwrite(str(motion_map_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame)
 
-                # tiles1, tiles2, padded_shape = tile_dual_images(current_frame, difference_frame)
-                # detections = run_yolo_pose_on_tiles(tiles1, detector, tiles2=tiles2)
 
-                labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4])  # pedestrian, cyclist, car, bus, truck
+                image_save_path = input_save_path / (file_name_to_save + '.jpg')
+                labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4], img_save_path=image_save_path)  # pedestrian, cyclist, car, bus, truck
                 image_draw = previous_2_frame.copy()
                 if labels:
                     for i in range(len(labels)):
-                        image = draw_predictions(image_draw, labels[i], scores[i], boxes[i])
-                # cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
-                # padded_img1 = cv2.copyMakeBorder(current_frame, 0, padded_shape[0] - current_frame.shape[0], 0, padded_shape[1] - current_frame.shape[1], cv2.BORDER_CONSTANT, value=0)
-                # image_draw = visualize_detections(padded_img1, detections)
+                        image_draw = draw_predictions(image_draw, labels[i], scores[i], boxes[i])
                 cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
                 image_draw = cv2.resize(image_draw, VIDEO_SAVE_SIZE)
                 cv2_video_writer.write(image_draw)
-                # cv2_video_writer_motion.write(difference_frame)
+
+                tiles1, tiles2, padded_shape = tile_dual_images(previous_2_frame, difference_frame)
+                detections = run_yolo_pose_on_tiles(tiles1, detector, tiles2=tiles2, save_path=input_tile_save_path, file_name=file_name_to_save)
+                padded_img1 = cv2.copyMakeBorder(previous_2_frame, 0, padded_shape[0] - previous_2_frame.shape[0], 0, padded_shape[1] - previous_2_frame.shape[1], cv2.BORDER_CONSTANT, value=0)
+                image_draw = visualize_detections(padded_img1, detections)
+                cv2.imwrite(str(inference_tile_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
+                image_draw = cv2.resize(image_draw, VIDEO_SAVE_SIZE)
+                cv2_video_writer_tile.write(image_draw)
 
                 previous_1_frame = previous_2_frame
                 previous_2_frame = current_frame

@@ -77,7 +77,7 @@ class Yolov5Detector():
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())),torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters()))) # run once
 
     def imgdeal(self,img):
-        img = letterbox(img, self.imgsz, stride=self.stride)[0]
+        # img = letterbox(img, self.imgsz, stride=self.stride)[0]
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1) # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
@@ -88,9 +88,13 @@ class Yolov5Detector():
             img = img.unsqueeze(0)
         return img
 
-    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None):
+    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None, img_save_path=None):
         # Padded resize
         original_shape = img1.shape
+        img1 = letterbox(img1, self.imgsz, stride=self.stride)[0]
+        img2 = letterbox(img2, self.imgsz, stride=self.stride)[0]
+        if img_save_path is not None:
+            cv2.imwrite(img_save_path, cv2.hconcat((img1, img2)))
         img1 = self.imgdeal(img1)
         img2 = self.imgdeal(img2)
         # print(img1.shape)
