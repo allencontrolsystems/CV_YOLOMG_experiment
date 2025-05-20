@@ -13,7 +13,7 @@ from test_code.FD3_mask import FD3_mask
 from dualdetector import Yolov5Detector, draw_predictions
 from utils.augmentations import letterbox
 
-GUNCAM_bursts = ["15_05_2025__19_52_28"]
+GUNCAM_bursts = ["15_05_2025__21_25_50"]
 
 IMAGES_PATH = Path(r"C:\Users\micha\rosie_data")
 ANNOTATION_PATH = None
