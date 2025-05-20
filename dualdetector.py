@@ -57,8 +57,7 @@ def draw_predictions(img, label, score, box, color=(156, 39, 176), location=None
 
     
 class Yolov5Detector():
-    def __init__(self, weights=''):
-        imgsz = 5312
+    def __init__(self, weights='', imgsz=1280):
         self.device = device = select_device('0')
         self.half = half = device.type != 'cpu' # half precision only supported on CUDA
         
@@ -91,7 +90,7 @@ class Yolov5Detector():
 
     def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None):
         # Padded resize
-        original_shape = (4608, 5312, 3)
+        original_shape = img1.shape
         img1 = self.imgdeal(img1)
         img2 = self.imgdeal(img2)
         # print(img1.shape)
