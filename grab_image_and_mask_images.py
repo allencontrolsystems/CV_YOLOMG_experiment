@@ -12,7 +12,7 @@ from ultralytics import YOLO
 from test_code.FD3_mask import FD3_mask
 from dualdetector import Yolov5Detector, draw_predictions
 
-GUNCAM_bursts = ["15_05_2025__21_16_17"]
+GUNCAM_bursts = ["15_05_2025__20_21_34"]
 
 IMAGES_PATH = Path(r"C:\Users\micha\rosie_data")
 ANNOTATION_PATH = None
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
         image_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"rgb_images_{detector_imgsz}"
         motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"motion31_images_{detector_imgsz}"
-        inference_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"inference_result_{detector_imgsz}_yolomg_tiled"
+        inference_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"inference_result_{detector_imgsz}"
         video_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst
 
         image_save_path.mkdir(parents=True, exist_ok=True)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
 
                 file_name_to_save = guncam_burst + '_' + str(frame_count).zfill(4)
-                # cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
+                cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
                 if previous_2_frame is None:
                     if previous_1_frame is None:
                         previous_1_frame = current_frame
@@ -247,19 +247,19 @@ if __name__ == "__main__":
 
                 difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame).astype(np.uint8)
                 difference_frame = cv2.cvtColor(difference_frame, cv2.COLOR_GRAY2BGR)
-                # cv2.imwrite(str(motion_map_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame)
+                cv2.imwrite(str(motion_map_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame)
 
-                tiles1, tiles2, padded_shape = tile_dual_images(current_frame, difference_frame)
-                detections = run_yolo_pose_on_tiles(tiles1, detector, tiles2=tiles2)
+                # tiles1, tiles2, padded_shape = tile_dual_images(current_frame, difference_frame)
+                # detections = run_yolo_pose_on_tiles(tiles1, detector, tiles2=tiles2)
 
                 labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4])  # pedestrian, cyclist, car, bus, truck
-                # image_draw = previous_2_frame.copy()
-                # if labels:
-                #     for i in range(len(labels)):
-                #         image = draw_predictions(image_draw, labels[i], scores[i], boxes[i])
+                image_draw = previous_2_frame.copy()
+                if labels:
+                    for i in range(len(labels)):
+                        image = draw_predictions(image_draw, labels[i], scores[i], boxes[i])
                 # cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
-                padded_img1 = cv2.copyMakeBorder(current_frame, 0, padded_shape[0] - current_frame.shape[0], 0, padded_shape[1] - current_frame.shape[1], cv2.BORDER_CONSTANT, value=0)
-                image_draw = visualize_detections(padded_img1, detections)
+                # padded_img1 = cv2.copyMakeBorder(current_frame, 0, padded_shape[0] - current_frame.shape[0], 0, padded_shape[1] - current_frame.shape[1], cv2.BORDER_CONSTANT, value=0)
+                # image_draw = visualize_detections(padded_img1, detections)
                 cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
                 image_draw = cv2.resize(image_draw, VIDEO_SAVE_SIZE)
                 cv2_video_writer.write(image_draw)
