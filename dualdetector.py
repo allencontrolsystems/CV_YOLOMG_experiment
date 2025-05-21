@@ -23,7 +23,7 @@ from utils.general import check_img_size, non_max_suppression, scale_coords
 from utils.torch_utils import select_device
 
 
-def draw_predictions(img, label, score, box, color=(156, 39, 176), location=None):
+def draw_predictions(img, label, score, box, curr_roi=None, next_roi=None, color=(156, 39, 176), location=None):
     f_face = cv2.FONT_HERSHEY_SIMPLEX
     f_scale = 0.5
     f_thickness, l_thickness = 1, 2
@@ -41,6 +41,12 @@ def draw_predictions(img, label, score, box, color=(156, 39, 176), location=None
     else:
         cv2.rectangle(img, (u1, v1), (u1 + text_w, v1 - text_h), color, -1)
         cv2.putText(img, text, (u1, v1 - 4), f_face, f_scale, (255, 255, 255), f_thickness, cv2.LINE_AA)
+
+    # if curr_roi:
+    #     cv2.rectangle(img, (curr_roi[0], curr_roi[1]), (curr_roi[2], curr_roi[3]), (0, 0, 255), 3)
+
+    # if next_roi:
+    #     cv2.rectangle(img, (next_roi[0], next_roi[1]), (next_roi[2], next_roi[3]), (0, 255, 0), 3)
     
     if location is not None:
         text = '(%.1fm, %.1fm)' % (location[0], location[1])
@@ -88,11 +94,13 @@ class Yolov5Detector():
             img = img.unsqueeze(0)
         return img
 
-    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None, img_save_path=None):
+    def run(self, img1, img2, conf_thres=0.1, iou_thres=0.4, classes=None, img_save_path=None, imgsz=None):
         # Padded resize
         original_shape = img1.shape
-        img1 = letterbox(img1, self.imgsz, stride=self.stride)[0]
-        img2 = letterbox(img2, self.imgsz, stride=self.stride)[0]
+        if imgsz is None:
+            imgsz = self.imgsz
+        img1 = letterbox(img1, imgsz, stride=self.stride)[0]
+        img2 = letterbox(img2, imgsz, stride=self.stride)[0]
         if img_save_path is not None:
             cv2.imwrite(img_save_path, cv2.hconcat((img1, img2)))
         img1 = self.imgdeal(img1)
