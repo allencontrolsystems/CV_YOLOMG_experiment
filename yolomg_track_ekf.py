@@ -12,6 +12,8 @@ import numpy as np
 # from ultralytics import YOLO
 from test_code.FD3_mask import FD3_mask
 from dualdetector import Yolov5Detector, draw_predictions
+from utils.augmentations import letterbox
+
 
 from computer_vision.inference.CenterFinderYOLO import CenterFinderYOLO
 from guncam.misc.robot_geometry import (RobotGeometryManager,
@@ -26,7 +28,7 @@ GUNCAM_bursts = ["15_05_2025__21_16_17"]
 
 IMAGES_PATH = Path.home() / "acs-turret-raw-upload"
 ANNOTATION_PATH = None
-DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG" / "videos"
+DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG_tracking" / "videos"
 YOLOMG_PATH = Path.home() / "turret-vision" / "computer_vision" / "yolomg"
 # YOLOMG_PATH = Path.home() / "YOLOMG"
 
@@ -231,7 +233,7 @@ if __name__ == "__main__":
     joint_states = (np.array([0, 0]), np.array([0, 0]))
     ekf.reset(0)
     # Initializing at time=0 seems to to not work.
-    time = 7
+    sim_time = 7
     next_roi = None
     results = []
     im_count = 0
@@ -265,6 +267,7 @@ if __name__ == "__main__":
             if image_file.suffix == ".bmp":
                 frame = cv2.imread(str(image_file))
                 current_frame = frame
+                current_frame = letterbox(current_frame, 1920, stride=16)[0]
                 frame_count += 1
 
                 # tiles, padded_shape = tile_image(current_frame)
@@ -297,7 +300,6 @@ if __name__ == "__main__":
                 else:
                     imgsz = 1280
 
-                pdb.set_trace()
                 labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4], imgsz=imgsz)  # pedestrian, cyclist, car, bus, truck
                 
                 if len(boxes) != 0:
@@ -315,9 +317,9 @@ if __name__ == "__main__":
                             new_boxes.append([x0 + next_roi[0], y0 + next_roi[1], x1 + next_roi[0], y1 + next_roi[1]])
 
                     inference = DroneDetection(center_x, center_y, scores[max_idx], 0, 0, 0, 0)
-                    ekf.camera_measurement_taken(inference, time, joint_states)
-                    time += seconds_between_frames
-                    (p1, v1) = ekf.get_drone_position_and_velocity_at_range(time, 10.0, joint_states)
+                    ekf.camera_measurement_taken(inference, sim_time, joint_states)
+                    sim_time += seconds_between_frames
+                    (p1, v1) = ekf.get_drone_position_and_velocity_at_range(sim_time, 10.0, joint_states)
                     print(f"inferred center {center_x} {center_y}")
                     info = {"inferred_center": [center_x, center_y]}
                     print("X1:", p1, "v1", v1)
@@ -362,22 +364,22 @@ if __name__ == "__main__":
                 #     cv2.waitKey(0)
                 #     cv2.destroyAllWindows()
                 print("save file", str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')))
-                # cv2.namedWindow("image", cv2.WINDOW_NORMAL)
-                # cv2.imshow("image", image_draw)
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()
-                # cv2.destroyAllWindows()
+                cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+                cv2.imshow("image", image_draw)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                cv2.destroyAllWindows()
 
                 cv2.imwrite(str(inference_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), image_draw)
                 image_draw = cv2.resize(image_draw, VIDEO_SAVE_SIZE)
-                print("video write", cv2_video_writer.write(image_draw))
+                cv2_video_writer.write(image_draw)
                 # cv2_video_writer_motion.write(difference_frame)
 
                 previous_1_frame = previous_2_frame
                 previous_2_frame = current_frame
             print("im_count", im_count)
-            # if im_count >= 50:
-            #     break
+            if im_count >= 200:
+                break
 
         cv2_video_writer.release()
         print("released")
