@@ -18,7 +18,8 @@ GUNCAM_bursts = ["15_05_2025__21_25_50"]
 IMAGES_PATH = Path.home() / "rosie_data"
 ANNOTATION_PATH = None
 DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG" / "videos"
-YOLOMG_PATH = Path.home() / "turret-vision" / "computer_vision" / "yolomg"
+# YOLOMG_PATH = Path.home() / "turret-vision" / "computer_vision" / "yolomg"
+YOLOMG_PATH = Path.home() / "YOLOMG"
 
 IMAGE_CROP_SIZE = 704
 RANDOMNESS_FOR_CROP_IMAGE = 5
