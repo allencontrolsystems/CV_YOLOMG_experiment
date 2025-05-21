@@ -99,8 +99,9 @@ class Yolov5Detector():
         original_shape = img1.shape
         if imgsz is None:
             imgsz = self.imgsz
-        img1 = letterbox(img1, imgsz, stride=self.stride)[0]
-        img2 = letterbox(img2, imgsz, stride=self.stride)[0]
+        # img1 = letterbox(img1, imgsz, stride=self.stride)[0]
+        # img2 = letterbox(img2, imgsz, stride=self.stride)[0]
+        print("stride", self.stride)
         if img_save_path is not None:
             cv2.imwrite(img_save_path, cv2.hconcat((img1, img2)))
         img1 = self.imgdeal(img1)

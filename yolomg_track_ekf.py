@@ -8,6 +8,7 @@ import pdb
 
 import cv2
 import numpy as np
+import shutil
 
 # from ultralytics import YOLO
 from test_code.FD3_mask import FD3_mask
@@ -20,14 +21,19 @@ from guncam.misc.CommonState import RobotState
 from guncam.misc import DroneKalmanFilter
 from searchcam.vision_classes import DroneDetection
 
+from utils.augmentations import letterbox
+
 
 # GUNCAM_bursts = ["15_05_2025__19_23_57"]
 GUNCAM_bursts = ["15_05_2025__21_16_17"]
 
 IMAGES_PATH = Path.home() / "acs-turret-raw-upload"
 ANNOTATION_PATH = None
-DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG2" / "videos"
+DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG" / "videos_full2"
 YOLOMG_PATH = Path.home() / "turret-vision" / "computer_vision" / "yolomg"
+
+if Path.exists(DESIRED_IMAGE_SAVE_PATH / GUNCAM_bursts[0]):
+    shutil.rmtree(DESIRED_IMAGE_SAVE_PATH / GUNCAM_bursts[0])
 # YOLOMG_PATH = Path.home() / "YOLOMG"
 
 IMAGE_CROP_SIZE = 704
@@ -42,6 +48,7 @@ roi_size = 720
 next_roi = None
 old_boxes = None
 new_boxes = None
+use_roi_cropping = True
 
 # os.makedirs(output_dir, exist_ok=True)
 
@@ -236,18 +243,22 @@ if __name__ == "__main__":
     results = []
     im_count = 0
 
-
     for guncam_burst in GUNCAM_bursts:
         guncam_image_path = IMAGES_PATH / guncam_burst
         print(guncam_image_path)
 
         image_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"rgb_images_{detector_imgsz}"
         motion_map_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"motion31_images_{detector_imgsz}"
+        motion_map_save_path_cropped = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"motion31_images_cropped_{detector_imgsz}"
+
         inference_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst / f"inference_result_{detector_imgsz}"
         video_save_path = DESIRED_IMAGE_SAVE_PATH / guncam_burst
 
         image_save_path.mkdir(parents=True, exist_ok=True)
         motion_map_save_path.mkdir(parents=True, exist_ok=True)
+        motion_map_save_path_cropped.mkdir(parents=True, exist_ok=True)
+
+
         inference_save_path.mkdir(parents=True, exist_ok=True)
         video_save_path.mkdir(parents=True, exist_ok=True)
 
@@ -265,6 +276,7 @@ if __name__ == "__main__":
             if image_file.suffix == ".bmp":
                 frame = cv2.imread(str(image_file))
                 current_frame = frame
+                current_frame = letterbox(current_frame, 1920, stride=16)[0]
                 frame_count += 1
 
                 # tiles, padded_shape = tile_image(current_frame)
@@ -275,7 +287,7 @@ if __name__ == "__main__":
 
 
                 file_name_to_save = guncam_burst + '_' + str(frame_count).zfill(4)
-                cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
+                # cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), current_frame)
                 if previous_2_frame is None:
                     if previous_1_frame is None:
                         previous_1_frame = current_frame
@@ -285,18 +297,26 @@ if __name__ == "__main__":
 
                 difference_frame = FD3_mask(previous_1_frame, previous_2_frame, current_frame).astype(np.uint8)
                 difference_frame = cv2.cvtColor(difference_frame, cv2.COLOR_GRAY2BGR)
-                cv2.imwrite(str(motion_map_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame)
 
                 # tiles1, tiles2, padded_shape = tile_dual_images(current_frame, difference_frame)
                 # detections = run_yolo_pose_on_tiles(tiles1, detector, tiles2=tiles2)
                 orig_previous_2_frame = previous_2_frame
+                cv2.imwrite(str(motion_map_save_path / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame)
+
                 if next_roi is not None:
-                    previous_2_frame = previous_2_frame[next_roi[1]:next_roi[3], next_roi[0]:next_roi[2], :]
-                    difference_frame = difference_frame[next_roi[1]:next_roi[3], next_roi[0]:next_roi[2], :]
+                    previous_2_frame_cropped = previous_2_frame[next_roi[1]:next_roi[3], next_roi[0]:next_roi[2], :]
+                    difference_frame_cropped = difference_frame[next_roi[1]:next_roi[3], next_roi[0]:next_roi[2], :]
                     imgsz=roi_size
+                    previous_2_frame_cropped = letterbox(previous_2_frame_cropped, imgsz, stride=16)[0]
+                    difference_frame_cropped = letterbox(difference_frame_cropped, imgsz, stride=16)[0]
+                    labels, scores, boxes = detector.run(previous_2_frame_cropped, difference_frame_cropped, classes=[0, 1, 2, 3, 4], imgsz=imgsz)  # pedestrian, cyclist, car, bus, truck
+                    cv2.imwrite(str(image_save_path / (file_name_to_save + '.jpg')), previous_2_frame_cropped)
+                    cv2.imwrite(str(motion_map_save_path_cropped / (guncam_burst + '_' + str(frame_count-1).zfill(4)+ '.jpg')), difference_frame_cropped)
+
                 else:
                     imgsz = 1280
-                labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4], imgsz=imgsz)  # pedestrian, cyclist, car, bus, truck
+                    labels, scores, boxes = detector.run(previous_2_frame, difference_frame, classes=[0, 1, 2, 3, 4], imgsz=imgsz)  # pedestrian, cyclist, car, bus, truck
+                
                 
                 if len(boxes) != 0:
                     max_idx = np.argmax(scores)
@@ -314,6 +334,9 @@ if __name__ == "__main__":
 
                     inference = DroneDetection(center_x, center_y, scores[max_idx], 0, 0, 0, 0)
                     ekf.camera_measurement_taken(inference, time, joint_states)
+                    (p1, v1) = ekf.get_drone_position_and_velocity_at_range(time, 10.0, joint_states)
+                    predicted_center_now = robot_geometry.project_from_world_frame_to_px(p1, joint_states[0], camera_id=BullfrogCameraIds.Guncam)
+
                     time += seconds_between_frames
                     (p1, v1) = ekf.get_drone_position_and_velocity_at_range(time, 10.0, joint_states)
                     print(f"inferred center {center_x} {center_y}")
@@ -322,28 +345,31 @@ if __name__ == "__main__":
                     predicted_next_center = robot_geometry.project_from_world_frame_to_px(p1, joint_states[0], camera_id=BullfrogCameraIds.Guncam)
                     print("predicted next center", predicted_next_center)
                     info["ekf_predicted_next_center"] = predicted_next_center
+
                     curr_roi = next_roi
-                    next_roi = [
-                        predicted_next_center[0, 0] - roi_size / 2,
-                        predicted_next_center[1, 0] - roi_size / 2,
-                        predicted_next_center[0, 0] + roi_size / 2,
-                        predicted_next_center[1, 0] + roi_size / 2,
-                    ]
-                    # Note the ROI might not be square.
-                    next_roi = [max(int(pixel), 0) for pixel in next_roi]
-                    print("next_roi", next_roi)
-                    print("curr roi", curr_roi)
+                    if use_roi_cropping:
+                        next_roi = [
+                            predicted_next_center[0, 0] - roi_size / 2,
+                            predicted_next_center[1, 0] - roi_size / 2,
+                            predicted_next_center[0, 0] + roi_size / 2,
+                            predicted_next_center[1, 0] + roi_size / 2,
+                        ]
+                        # Note the ROI might not be square.
+                        next_roi = [max(int(pixel), 0) for pixel in next_roi]
+                        print("next_roi", next_roi)
+                        print("curr roi", curr_roi)
 
                 if new_boxes:
                     old_boxes = boxes
                     boxes = new_boxes
                 image_draw = orig_previous_2_frame.copy()
 
+                cv2.drawMarker(image_draw, (int(predicted_center_now[0, 0]), int(predicted_center_now[1, 0])), (0,255,0), markerType=cv2.MARKER_CROSS, markerSize=10, thickness=2, line_type=cv2.LINE_AA)
                 if curr_roi:
                     cv2.rectangle(image_draw, (curr_roi[0], curr_roi[1]), (curr_roi[2], curr_roi[3]), (0, 0, 255), 3)
 
-                if next_roi:
-                    cv2.rectangle(image_draw, (next_roi[0], next_roi[1]), (next_roi[2], next_roi[3]), (0, 255, 0), 3)
+                # if next_roi:
+                #     cv2.rectangle(image_draw, (next_roi[0], next_roi[1]), (next_roi[2], next_roi[3]), (0, 255, 0), 3)
 
                 if labels:
                     for i in range(len(labels)):
@@ -374,7 +400,7 @@ if __name__ == "__main__":
                 previous_1_frame = previous_2_frame
                 previous_2_frame = current_frame
             print("im_count", im_count)
-            if im_count >= 50:
+            if im_count >= 400:
                 break
 
         cv2_video_writer.release()
