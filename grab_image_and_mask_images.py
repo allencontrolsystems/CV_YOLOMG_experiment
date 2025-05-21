@@ -15,9 +15,11 @@ from utils.augmentations import letterbox
 
 GUNCAM_bursts = ["15_05_2025__19_23_57"]
 
-IMAGES_PATH = Path(r"C:\Users\micha\rosie_data")
+IMAGES_PATH = Path.home() / "rosie_data"
 ANNOTATION_PATH = None
-DESIRED_IMAGE_SAVE_PATH = Path(r"C:\Users\micha\YOLOMG\videos")
+DESIRED_IMAGE_SAVE_PATH = Path.home() / "YOLOMG" / "videos"
+# YOLOMG_PATH = Path.home() / "turret-vision" / "computer_vision" / "yolomg"
+YOLOMG_PATH = Path.home() / "YOLOMG"
 
 IMAGE_CROP_SIZE = 704
 RANDOMNESS_FOR_CROP_IMAGE = 5
@@ -199,7 +201,9 @@ def save_annotation(save_path, x_min=None, x_max=None, y_min=None, y_max=None):
 if __name__ == "__main__":
 
     detector_imgsz = 1280
-    detector = Yolov5Detector(r"C:\Users\micha\YOLOMG\runs\train\ARD100_mask32-1280_uavs\weights\best.pt", imgsz=detector_imgsz)
+    # detector = Yolov5Detector(r"C:\Users\micha\YOLOMG\runs\train\ARD100_mask32-1280_uavs\weights\best.pt", imgsz=detector_imgsz)
+    detector = Yolov5Detector(YOLOMG_PATH / "runs" / "train" / "ARD100_mask32-1280_uavs" / "weights" / "best.pt", imgsz=detector_imgsz)
+    
     # detector = YOLO(r"C:\Users\micha\YOLOMG\epoch19.pt")
     VIDEO_SAVE_SIZE = (1878, 1629)
 
