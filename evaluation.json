@@ -1,0 +1,19 @@
+{
+  "evaluation_datasets_info": {
+    "rgb_image_base_path": "/home/acs/YOLOMG/evaluation_data/cropped_rgb",
+    "annotation_base_path": "",
+    "result_output_path": "/home/acs/YOLOMG/evaluation_result",
+    "motion_image_base_path": "",
+    "evaluation_datasets": ["phantom02"]
+  },
+  "evaluation_parameters": {
+      "pixel_distance_error_threshold": 0.5
+  },
+  "center_finder_run_parameters": {
+    "iou_threshold": 0.7,
+    "max_det": 100
+  },
+  "misc": {
+    "draw_predictions": true
+  }
+}

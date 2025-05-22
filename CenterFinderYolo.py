@@ -10,7 +10,7 @@ import ultralytics
 
 sys.path.append(os.path.abspath('../cv-common'))
 from inference.CenterFinderBase import CenterFinderBase, DroneCenterPixel, BoundingBox, DEVICE
-from evaluation.evaluate import evaluate
+from evaluation.static_image_evaluation import StaticImageEvaluation
 
 class CenterFinderYolo(CenterFinderBase):
 
@@ -28,7 +28,7 @@ class CenterFinderYolo(CenterFinderBase):
             verbose=verbose)
         self.conf = conf
 
-        self.model.to(DEVICE)
+        self.model.to("cuda:1")
 
         if DEVICE == torch.device("cpu"):
             print("\n", "GPU NOT DETECTED, WILL INFERENCE ON CPU", "\n")
@@ -37,7 +37,8 @@ class CenterFinderYolo(CenterFinderBase):
                     img: np.array,
                     iou_threshold: float = 0.7,
                     max_det: int = 100,
-                    img_sz: Tuple[int, int] = None) -> List[DroneCenterPixel]:
+                    img_sz: Tuple[int, int] = None,
+                    **kwargs) -> List[DroneCenterPixel]:
         """Returns the centers of the detected object in the image(sorted by highest confidence first), if
         an object was detected. If no object is detected, returns empty list.
 
@@ -82,17 +83,9 @@ class CenterFinderYolo(CenterFinderBase):
 
 if __name__ == "__main__":
 
-    datasets = [
-        {
-            "name": "phantom02",
-            "dataset_dir": "cropped_rgb_images",
-            "ext": ".jpg",
-        },
-    ]
-
     model_path = "epoch19.pt"
-    conf_threshold = 0
+    conf_threshold = 0.01
 
     center_finder = CenterFinderYolo(model_weight=model_path, conf=conf_threshold)
-
-    evaluate(center_finder=center_finder, dataset_base_dir="/home/acs/YOLOMG/evaluation_data/phantom02", datasets=datasets, save_inferences=True, output_dir="/home/acs/YOLOMG/tmp")
+    static_image_evaluation = StaticImageEvaluation(center_finder, "evaluation.json")
+    static_image_evaluation.evaluate()
