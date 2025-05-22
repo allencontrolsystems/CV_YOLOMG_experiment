@@ -52,7 +52,6 @@ use_roi_cropping = True
 
 # os.makedirs(output_dir, exist_ok=True)
 
-
 def tile_image(image, tile_size=(1280, 720), overlap=200):
     tiles = []
     tile_w, tile_h = tile_size
